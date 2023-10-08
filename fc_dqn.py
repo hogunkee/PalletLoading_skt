@@ -178,6 +178,7 @@ def learning(
         b2=0.1,
         show_q=False,
         n_hidden=16,
+        augmentation=False,
         resolution=64,
         ):
 
@@ -254,10 +255,14 @@ def learning(
         fig.canvas.draw()
 
     count_steps = 0
+    learning_starts = False
     for ne in range(total_episodes):
         ep_len = 0
         episode_reward = 0.
         log_minibatchloss = []
+        if augmentation:
+            history_blocks = []
+            history_actions = []
 
         obs = env.reset()
         state, block = obs
@@ -290,6 +295,16 @@ def learning(
             ## save transition to the replay buffer ##
             replay_buffer.add(state, block, action, next_state, next_block, reward, done)
 
+            # trajectory data augmentstion #
+            if augmentation and not done:
+                traj_samples = sample_trajectories(history_blocks, history_actions, next_state, resolution=resolution)
+                for traj_sample in traj_samples:
+                    state_re, block_re, action_re = traj_sample
+                    replay_buffer.add(state_re, block_re, action_re, next_state, next_block, reward, done)
+
+                history_blocks.append(block)
+                history_actions.append(action)
+
             if replay_buffer.size < learn_start:
                 if done:
                     break
@@ -298,9 +313,10 @@ def learning(
                     block = next_block
                     pre_action = action
                     continue
-            elif replay_buffer.size == learn_start:
+            elif (not learning_starts) and (replay_buffer.size >= learn_start):
                 epsilon = start_epsilon
                 count_steps = 0
+                learning_starts = True
                 break
 
             ## sample from replay buff & update networks ##
@@ -401,6 +417,7 @@ if __name__=='__main__':
     parser.add_argument("--update_freq", default=100, type=int)
     parser.add_argument("--log_freq", default=100, type=int)
     parser.add_argument("--double", action="store_false") # default: True
+    parser.add_argument("--augmentation", action="store_true")
     parser.add_argument("--half", action="store_true")
     parser.add_argument("--continue_learning", action="store_true")
     ## Evaluate ##
@@ -475,6 +492,7 @@ if __name__=='__main__':
     update_freq = args.update_freq
     log_freq = args.log_freq
     double = args.double
+    augmentation = args.augmentation
 
     half = args.half
     continue_learning = args.continue_learning
@@ -492,4 +510,4 @@ if __name__=='__main__':
                  learn_start=learn_start, update_freq=update_freq, log_freq=log_freq, 
                  double=double, continue_learning=continue_learning, model_path=model_path, 
                  wandb_off=wandb_off, b1=b1, b2=b2, show_q=show_q, n_hidden=n_hidden,
-                 resolution=resolution)
+                 augmentation=augmentation, resolution=resolution)

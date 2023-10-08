@@ -7,6 +7,24 @@ import torch.nn as nn
 
 criterion = nn.SmoothL1Loss(reduction='mean').cuda()
 
+def sample_trajectories(blocks, actions, current_state, resolution):
+    trajectories = []
+    for block, action in zip(blocks, actions):
+        # make box region #
+        cy, cx = action
+        #by, bx = self.next_block
+        by, bx = np.round(np.array(self.block) * resolution).astype(int)
+        min_y = np.round(cy - (by-1e-5)/2).astype(int)
+        min_x = np.round(cx - (bx-1e-5)/2).astype(int)
+        max_y = np.round(cy + (by-1e-5)/2).astype(int)
+        max_x = np.round(cx + (bx-1e-5)/2).astype(int)
+
+        state_copy = current_state.copy()
+        state_copy[0, min_y: max_y, min_x: max_x] = 0
+        traj = (state_copy, block, action)
+        trajectories.append(traj)
+    return trajectories
+
 def smoothing_log(log_data, log_freq):
     return np.convolve(log_data, np.ones(log_freq), 'valid') / log_freq
 
