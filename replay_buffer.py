@@ -10,9 +10,9 @@ class ReplayBuffer(object):
         self.dim_action = dim_action
 
         self.state = np.zeros([max_size] + list(state_dim))
-        self.block = np.zeros([max_size] + list(block_dim))
+        self.block = np.zeros((max_size, block_dim))
         self.next_state = np.zeros([max_size] + list(state_dim))
-        self.next_block = np.zeros([max_size] + list(block_dim))
+        self.next_block = np.zeros((max_size, block_dim))
         self.action = np.zeros((max_size, dim_action))
         self.reward = np.zeros((max_size, dim_reward))
         self.not_done = np.zeros((max_size, 1))

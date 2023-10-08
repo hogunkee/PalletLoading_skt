@@ -63,7 +63,7 @@ class BasicBlock(nn.Module):
 
 class FCQResNet(nn.Module):
     def __init__(self, n_actions, in_ch, n_hidden=8, block=BasicBlock):
-        super(FCQResNetSmall, self).__init__()
+        super(FCQResNet, self).__init__()
         self.in_channel = 8
         self.n_actions = n_actions
         num_blocks = [2, 2, 1, 1]
@@ -140,7 +140,7 @@ class FCQResNet(nn.Module):
             h = self.layer4(h)
             B, C, H, W = h.size()
             h_block = block.view(B, 2, 1, 1).repeat([1, 1, H, W])
-            h_cat = torch.cat([h, block], axis=1)
+            h_cat = torch.cat([h, h_block], axis=1)
             h = self.fully_conv(h_cat)
             # print(h.shape)
             h = self.upscore(h)

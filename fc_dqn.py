@@ -1,5 +1,6 @@
 import argparse
 import datetime
+import time
 import os
 import json
 import skfmm
@@ -10,6 +11,7 @@ import torch.nn as nn
 from fcn_resnet import FCQResNet as FCQNet
 from utils import *
 from replay_buffer import ReplayBuffer
+from environment import Floor1
 
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -26,6 +28,7 @@ def get_action(env, fc_qnet, state, block, epsilon, pre_action=None, with_q=Fals
         action = [np.random.randint(crop_min,crop_max), np.random.randint(crop_min,crop_max), 0]
         if with_q:
             state_tensor = torch.FloatTensor([state]).cuda()
+            #state_tensor = state_tensor[:, None, :, :]
             block_tensor = torch.FloatTensor([block]).cuda()
             q_value = fc_qnet(state_tensor, block_tensor)
             q_raw = q_value[0].detach().cpu().numpy()
@@ -33,6 +36,7 @@ def get_action(env, fc_qnet, state, block, epsilon, pre_action=None, with_q=Fals
             q[:, crop_min:crop_max, crop_min:crop_max] = q_raw[:, crop_min:crop_max, crop_min:crop_max]
     else:
         state_tensor = torch.FloatTensor([state]).cuda()
+        #state_tensor = state_tensor[:, None, :, :]
         block_tensor = torch.FloatTensor([block]).cuda()
         q_value = fc_qnet(state_tensor, block_tensor)
         q_raw = q_value[0].detach().cpu().numpy()
@@ -129,7 +133,7 @@ def evaluate(env, model_path='', num_trials=10, b1=0.1, b2=0.1, show_q=False, n_
                 fig.canvas.draw()
                 fig2.canvas.draw()
 
-            obs, reward, done = env.step(action)
+            obs, reward, done = env.step(action[:2])
             next_state, next_block = obs
             episode_reward += reward
 
@@ -188,7 +192,7 @@ def learning(
     #optimizer = torch.optim.SGD(FCQ.parameters(), lr=learning_rate, momentum=0.9, weight_decay=2e-5)
     optimizer = torch.optim.Adam(FCQ.parameters(), lr=learning_rate)
 
-    replay_buffer = ReplayBuffer([1, resolution, resolution], 2, dim_action=2, max_size=int(buff_size))
+    replay_buffer = ReplayBuffer([1, resolution, resolution], 2, dim_action=3, max_size=int(buff_size))
 
     model_parameters = filter(lambda p: p.requires_grad, FCQ.parameters())
     params = sum([np.prod(p.size()) for p in model_parameters])
@@ -257,6 +261,8 @@ def learning(
 
         obs = env.reset()
         state, block = obs
+        if len(state.shape)==2:
+            state = state[np.newaxis, :, :]
 
         pre_action = None
         for t_step in range(env.num_steps):
@@ -275,8 +281,10 @@ def learning(
                 print('min_q:', q_map.min(), '/ max_q:', q_map.max())
                 fig.canvas.draw()
 
-            obs, reward, done = env.step(action)
+            obs, reward, done = env.step(action[:2])
             next_state, next_block = obs
+            if len(next_state.shape)==2:
+                next_state = next_state[np.newaxis, :, :]
             episode_reward += reward
 
             ## save transition to the replay buffer ##
@@ -450,12 +458,12 @@ if __name__=='__main__':
     env = Floor1(
             resolution=resolution, 
             num_steps=max_steps,
-            num_previews=5,
+            num_preview=5,
             box_norm=True,
-            action_norm=True,
+            action_norm=False,
             render=render,
             block_size_min=b1,
-            block_Size_max=b2
+            block_size_max=b2
             )
 
     # learning configuration #
