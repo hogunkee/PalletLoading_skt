@@ -445,9 +445,9 @@ if __name__=='__main__':
     # wandb log #
     log_name = savename
     if b1==b2:
-        log_name += '_%f' %b1
+        log_name += '_%.2f' %b1
     else:
-        log_name += '_%f-%f' %(b1, b2)
+        log_name += '_%.2f-%.2f' %(b1, b2)
     wandb_off = args.wandb_off
     if not wandb_off:
         wandb.init(project="SKT Palletizing")
