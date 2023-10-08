@@ -5,15 +5,15 @@ from copy import deepcopy
 import torch
 import torch.nn as nn
 
+
 criterion = nn.SmoothL1Loss(reduction='mean').cuda()
 
 def sample_trajectories(blocks, actions, current_state, resolution):
     trajectories = []
     for block, action in zip(blocks, actions):
         # make box region #
-        cy, cx = action
-        #by, bx = self.next_block
-        by, bx = np.round(np.array(self.block) * resolution).astype(int)
+        cy, cx, _ = action
+        by, bx = np.round(np.array(block) * resolution).astype(int)
         min_y = np.round(cy - (by-1e-5)/2).astype(int)
         min_x = np.round(cx - (bx-1e-5)/2).astype(int)
         max_y = np.round(cy + (by-1e-5)/2).astype(int)
