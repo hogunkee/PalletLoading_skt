@@ -1,10 +1,7 @@
-import time
 import numpy as np
-import matplotlib
-matplotlib.use('TkAgg')
 from matplotlib import pyplot as plt
 
-class Floor1(object):
+class RLEnv(object):
     def __init__(self, 
                  resolution=512,
                  num_steps=100,
@@ -64,11 +61,8 @@ class Floor1(object):
         self.state, self.next_block = self.init_scenario()
         if self.render:
             self.render_current_state(self.state)
-        
-        next_block = np.array(self.next_block)
-        obs = (self.state, next_block)
-        return obs
-        # return self.state, self.next_block
+
+        return self.state, self.next_block
 
     def render_current_state(self, previous_state=None, box=None):
         pad = int(0.1 * self.resolution)
@@ -103,8 +97,9 @@ class Floor1(object):
         self.plots[1].imshow(state_pad)
 
         block_figures = None
-        if self.step_count==0:
+        if env.step_count==0:
             next_blocks = [self.next_block] + self.block_que[:-1]
+            print(next_blocks)
         else:
             next_blocks = self.block_que
         #for i, b in enumerate([self.next_block] + self.block_que[:-1]):
@@ -129,8 +124,7 @@ class Floor1(object):
                     block_figures = np.concatenate([block_figures, block_fig], axis=1)
         self.plots[3].imshow(block_figures)
         plt.draw()
-        # plt.pause(0.01)
-        plt.pause(1)
+        plt.pause(0.01)
 
     def get_next_block(self):
         next_block = self.block_que.pop(0)
@@ -202,39 +196,27 @@ class Floor1(object):
             next_block = self.next_block
         else:
             next_block = np.round(np.array(self.next_block) * self.resolution).astype(int)
-        
-        next_block = np.array(next_block)
-        obs = (self.state, next_block)
-        # return state, next_block, reward, episode_end
-        return obs, reward, episode_end
+
+        return self.state, next_block, reward, episode_end
 
 if __name__=='__main__':
     box_norm = True
     action_norm = True
-    env = Floor1(resolution=32, box_norm=box_norm, action_norm=action_norm, render=False, block_size_min=0.1, block_size_max=0.25)
-    # state, next_block = env.reset()
+    env = RLEnv(box_norm=box_norm, action_norm=action_norm, render=True, block_size_min=0.1, block_size_max=0.25)
+    state, next_block = env.reset()
 
-    total_reward = 0.
-    num_episodes = 100 
-    for ep in range(num_episodes):
-        obs = env.reset()
-        ep_reward = 0.
-        # print(f'Episode {ep} starts.')
-        for i in range(100):
-            if action_norm:
-                random_action = np.random.uniform(0.1, 0.9, 2)
-                action = random_action.tolist()
-            else:
-                random_action = np.random.uniform(0.1, 0.9, 2) * env.resolution
-                action = np.round(random_action).astype(int).tolist()
-            # print('action:', action)
-            # state, next_block, reward, end = env.step(action)
-            obs, reward, end = env.step(action)
-            ep_reward += reward
-            if end:
-                # print('Episode ends.')
-                break
-        # print("    ep_reward: ", ep_reward)
-        total_reward += ep_reward
-    avg_score = total_reward / num_episodes
-    print("average score: ", avg_score)
+    print('Episode starts.')
+    for i in range(100):
+        print('step %d.' %i)
+        if action_norm:
+            random_action = np.random.uniform(0.1, 0.9, 2)
+            action = random_action.tolist()
+        else:
+            random_action = np.random.uniform(0.1, 0.9, 2) * env.resolution
+            action = np.round(random_action).astype(int).tolist()
+        print('action:', action)
+        state, next_block, reward, end = env.step(action)
+        print('reward:', reward)
+        if end:
+            print('Episode ends.')
+            break
