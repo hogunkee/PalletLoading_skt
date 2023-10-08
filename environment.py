@@ -110,7 +110,10 @@ class PalletLoading(object):
             plot1 = plt.subplot2grid((2, 3), (0, 1))
             plot2 = plt.subplot2grid((2, 3), (0, 2))
             plot3 = plt.subplot2grid((2, 3), (1, 0), colspan=3)
-            plot0.set_title("previous state")
+            if self.plot_obs:
+                plot0.set_title(f"obs_img ({obs_resolution}x{obs_resolution})")
+            else:
+                plot0.set_title("previous state")
             plot1.set_title("current state")
             plot2.set_title("next block")
             plot3.set_title("next blocks")
