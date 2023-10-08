@@ -42,7 +42,7 @@ def calculate_loss_fcdqn(minibatch, FCQ, FCQ_target, gamma=0.5):
     actions = minibatch[4].type(torch.long)
     rewards = minibatch[5]
     not_done = minibatch[6]
-    batch_size = state_im.size()[0]
+    batch_size = state.size()[0]
 
     next_q = FCQ_target(next_state, next_block)
     next_q_max = next_q.max(1)[0].max(1)[0].max(1)[0]
@@ -65,7 +65,7 @@ def calculate_loss_double_fcdqn(minibatch, FCQ, FCQ_target, gamma=0.5):
     actions = minibatch[4].type(torch.long)
     rewards = minibatch[5]
     not_done = minibatch[6]
-    batch_size = state_im.size()[0]
+    batch_size = state.size()[0]
 
     def get_a_prime_pixel():
         next_q = FCQ(next_state, next_block)
