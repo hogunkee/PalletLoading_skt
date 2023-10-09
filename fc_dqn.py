@@ -8,7 +8,6 @@ from matplotlib import pyplot as plt
 
 import torch
 import torch.nn as nn
-from fcn_resnet import FCQResNet as FCQNet
 from utils import *
 from replay_buffer import ReplayBuffer
 from environment import Floor1
@@ -111,6 +110,8 @@ def evaluate(env, model_path='', num_trials=10, b1=0.1, b2=0.1, show_q=False, n_
 
         obs = env.reset()
         state, block = obs
+        if len(state.shape)==2:
+            state = state[np.newaxis, :, :]
 
         pre_action = None
         for t_step in range(env.num_steps):
@@ -135,6 +136,8 @@ def evaluate(env, model_path='', num_trials=10, b1=0.1, b2=0.1, show_q=False, n_
 
             obs, reward, done = env.step(action[:2])
             next_state, next_block = obs
+            if len(next_state.shape)==2:
+                next_state = next_state[np.newaxis, :, :]
             episode_reward += reward
 
             if done:
@@ -385,8 +388,8 @@ def learning(
             numpy_log = np.array(log_list, dtype=object)
             np.save('results/board/%s' %savename, numpy_log)
 
-            if log_returns[-1] > max_return:
-                max_return = log_returns[-1]
+            if log_mean_returns[-1] > max_return:
+                max_return = log_mean_returns[-1]
                 torch.save(FCQ.state_dict(), 'results/models/%s.pth' % savename)
                 print(" <- Highest Return. Saving the model.")
             else:
@@ -406,19 +409,20 @@ if __name__=='__main__':
     parser.add_argument("--render", action="store_true")
     parser.add_argument("--b1", default=0.1, type=float)
     parser.add_argument("--b2", default=0.25, type=float)
-    parser.add_argument("--max_steps", default=100, type=int)
+    parser.add_argument("--max_steps", default=20, type=int)
     parser.add_argument("--resolution", default=64, type=int)
     ## learning ##
     parser.add_argument("--lr", default=1e-4, type=float)
     parser.add_argument("--bs", default=128, type=int)
-    parser.add_argument("--buff_size", default=3e3, type=float)
+    parser.add_argument("--buff_size", default=1e4, type=float)
     parser.add_argument("--total_episodes", default=1e5, type=float)
-    parser.add_argument("--learn_start", default=1e3, type=float)
-    parser.add_argument("--update_freq", default=100, type=int)
-    parser.add_argument("--log_freq", default=100, type=int)
+    parser.add_argument("--learn_start", default=1e4, type=float)
+    parser.add_argument("--update_freq", default=500, type=int)
+    parser.add_argument("--log_freq", default=500, type=int)
     parser.add_argument("--double", action="store_false") # default: True
     parser.add_argument("--augmentation", action="store_true")
     parser.add_argument("--half", action="store_true")
+    parser.add_argument("--small", action="store_true")
     parser.add_argument("--continue_learning", action="store_true")
     ## Evaluate ##
     parser.add_argument("--evaluate", action="store_true")
@@ -466,7 +470,7 @@ if __name__=='__main__':
     else:
         log_name += '_%.2f-%.2f' %(b1, b2)
     wandb_off = args.wandb_off
-    if not wandb_off:
+    if not (evaluation or wandb_off):
         wandb.init(project="SKT Palletizing")
         wandb.run.name = log_name
         wandb.config.update(args)
@@ -495,11 +499,16 @@ if __name__=='__main__':
     augmentation = args.augmentation
 
     half = args.half
+    small = args.small
     continue_learning = args.continue_learning
     if half:
         n_hidden = 8
     else:
         n_hidden = 16
+    if small:
+        from fcn_resnet import FCQResNetSmall as FCQNet
+    else:
+        from fcn_resnet import FCQResNet as FCQNet
 
     if evaluation:
         evaluate(env=env, model_path=model_path, num_trials=num_trials, b1=b1, b2=b2, 
