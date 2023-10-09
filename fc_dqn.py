@@ -23,9 +23,9 @@ crop_max = 62 #220 #440 #88 #78 #54 #52
 
 
 def get_action(env, fc_qnet, state, block, epsilon, pre_action=None, with_q=False):
-    crop_min_y = 
+    #crop_min_y = 
     if np.random.random() < epsilon:
-        action = [np.random.randint(crop_min,crop_max), np.random.randint(crop_min,crop_max), 0]
+        action = [0, np.random.randint(crop_min,crop_max), np.random.randint(crop_min,crop_max)]
         if with_q:
             state_tensor = torch.FloatTensor([state]).cuda()
             #state_tensor = state_tensor[:, None, :, :]
