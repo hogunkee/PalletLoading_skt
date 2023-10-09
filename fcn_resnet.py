@@ -118,7 +118,7 @@ class FCQResNetSmall(nn.Module):
             frames = []
             from matplotlib import pyplot as plt
 
-        x_pad = F.pad(x, (20, 20, 20, 20), mode='constant')
+        x_pad = F.pad(x, (10, 10, 10, 10), mode='constant')
         output_prob = []
         for r_idx in range(self.n_actions):
             theta = r_idx * (2*np.pi / self.n_actions)
@@ -174,27 +174,19 @@ class FCQResNetSmall(nn.Module):
                 ax.set_xticks([])
                 ax.set_yticks([])
                 ax.set_title("%d\xb0" %(i*45))
-                # rect = patches.Rectangle((20, 20), 64, 64, linewidth=1, edgecolor='r', facecolor='none')
-                # ax.add_patch(rect)
                 plt.imshow(frames[i][0][..., :3])
                 ax = fig.add_subplot(4, self.n_actions, i + len(frames) + 1)
                 ax.set_xticks([])
                 ax.set_yticks([])
-                # rect = patches.Rectangle((20, 20), 64, 64, linewidth=1, edgecolor='r', facecolor='none')
-                # ax.add_patch(rect)
                 plt.imshow(frames[i][0][..., 3:])
 
                 ax = fig.add_subplot(4, self.n_actions, i + 2*len(frames) + 1)
                 ax.set_xticks([])
                 ax.set_yticks([])
-                # rect = patches.Rectangle((21, 21), 67, 67, linewidth=1, edgecolor='r', facecolor='none')
-                # ax.add_patch(rect)
                 plt.imshow(frames[i][1][..., :3])
                 ax = fig.add_subplot(4, self.n_actions, i + 3*len(frames) + 1)
                 ax.set_xticks([])
                 ax.set_yticks([])
-                # rect = patches.Rectangle((21, 21), 67, 67, linewidth=1, edgecolor='r', facecolor='none')
-                # ax.add_patch(rect)
                 plt.imshow(frames[i][1][..., 3:])
             plt.show()
         return torch.cat(output_prob, 1)
@@ -258,7 +250,7 @@ class FCQResNet(nn.Module):
             frames = []
             from matplotlib import pyplot as plt
 
-        x_pad = F.pad(x, (20, 20, 20, 20), mode='constant')
+        x_pad = F.pad(x, (10, 10, 10, 10), mode='constant')
         output_prob = []
         for r_idx in range(self.n_actions):
             theta = r_idx * (2*np.pi / self.n_actions)
@@ -315,27 +307,19 @@ class FCQResNet(nn.Module):
                 ax.set_xticks([])
                 ax.set_yticks([])
                 ax.set_title("%d\xb0" %(i*45))
-                # rect = patches.Rectangle((20, 20), 64, 64, linewidth=1, edgecolor='r', facecolor='none')
-                # ax.add_patch(rect)
                 plt.imshow(frames[i][0][..., :3])
                 ax = fig.add_subplot(4, self.n_actions, i + len(frames) + 1)
                 ax.set_xticks([])
                 ax.set_yticks([])
-                # rect = patches.Rectangle((20, 20), 64, 64, linewidth=1, edgecolor='r', facecolor='none')
-                # ax.add_patch(rect)
                 plt.imshow(frames[i][0][..., 3:])
 
                 ax = fig.add_subplot(4, self.n_actions, i + 2*len(frames) + 1)
                 ax.set_xticks([])
                 ax.set_yticks([])
-                # rect = patches.Rectangle((21, 21), 67, 67, linewidth=1, edgecolor='r', facecolor='none')
-                # ax.add_patch(rect)
                 plt.imshow(frames[i][1][..., :3])
                 ax = fig.add_subplot(4, self.n_actions, i + 3*len(frames) + 1)
                 ax.set_xticks([])
                 ax.set_yticks([])
-                # rect = patches.Rectangle((21, 21), 67, 67, linewidth=1, edgecolor='r', facecolor='none')
-                # ax.add_patch(rect)
                 plt.imshow(frames[i][1][..., 3:])
             plt.show()
         return torch.cat(output_prob, 1)
