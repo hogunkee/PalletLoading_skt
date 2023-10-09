@@ -174,7 +174,7 @@ class Floor1(object):
         # check out of range #
         if min_y < 0 or min_x < 0:
             out_of_range = True
-        if max_y >= self.resolution or max_x >= self.resolution:
+        if max_y > self.resolution or max_x > self.resolution:
             out_of_range = True
         if out_of_range:
             reward = 0.0
