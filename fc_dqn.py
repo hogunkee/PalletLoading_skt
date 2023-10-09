@@ -23,6 +23,7 @@ crop_max = 62 #220 #440 #88 #78 #54 #52
 
 
 def get_action(env, fc_qnet, state, block, epsilon, pre_action=None, with_q=False):
+    crop_min_y = 
     if np.random.random() < epsilon:
         action = [np.random.randint(crop_min,crop_max), np.random.randint(crop_min,crop_max), 0]
         if with_q:
@@ -43,12 +44,13 @@ def get_action(env, fc_qnet, state, block, epsilon, pre_action=None, with_q=Fals
         q[:, crop_min:crop_max, crop_min:crop_max] = q_raw[:, crop_min:crop_max, crop_min:crop_max]
         # avoid redundant motion #
         if pre_action is not None:
-            q[pre_action[2], pre_action[0], pre_action[1]] = q.min()
+            q[pre_action[0], pre_action[1], pre_action[2]] = q.min()
         # image coordinate #
-        aidx_x = q.max(0).max(1).argmax()
-        aidx_y = q.max(0).max(0).argmax()
-        aidx_th = q.argmax(0)[aidx_x, aidx_y]
-        action = [aidx_x, aidx_y, aidx_th]
+        aidx_y = q.max(0).max(1).argmax()
+        aidx_x = q.max(0).max(0).argmax()
+        aidx_th = q.argmax(0)[aidx_y, aidx_x]
+        action = [aidx_th, aidx_y, aidx_x]
+        #action = [aidx_x, aidx_y, aidx_th]
 
     if with_q:
         return action, q
@@ -134,7 +136,7 @@ def evaluate(env, model_path='', num_trials=10, b1=0.1, b2=0.1, show_q=False, n_
                 fig.canvas.draw()
                 fig2.canvas.draw()
 
-            obs, reward, done = env.step(action[:2])
+            obs, reward, done = env.step(action[1:])
             next_state, next_block = obs
             if len(next_state.shape)==2:
                 next_state = next_state[np.newaxis, :, :]
@@ -289,7 +291,7 @@ def learning(
                 print('min_q:', q_map.min(), '/ max_q:', q_map.max())
                 fig.canvas.draw()
 
-            obs, reward, done = env.step(action[:2])
+            obs, reward, done = env.step(action[1:])
             next_state, next_block = obs
             if len(next_state.shape)==2:
                 next_state = next_state[np.newaxis, :, :]

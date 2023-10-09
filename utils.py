@@ -68,7 +68,7 @@ def calculate_loss_fcdqn(minibatch, FCQ, FCQ_target, gamma=0.5):
     y_target = rewards + gamma * not_done * next_q_max
 
     q_values = FCQ(state, block)
-    pred = q_values[torch.arange(batch_size), actions[:, 2], actions[:, 0], actions[:, 1]]
+    pred = q_values[torch.arange(batch_size), actions[:, 0], actions[:, 1], actions[:, 2]]
     pred = pred.view(-1, 1)
 
     loss = criterion(y_target, pred)
@@ -87,27 +87,25 @@ def calculate_loss_double_fcdqn(minibatch, FCQ, FCQ_target, gamma=0.5):
 
     def get_a_prime_pixel():
         next_q = FCQ(next_state, next_block)
-        next_q_chosen = next_q[torch.arange(batch_size), :, actions[:, 0], actions[:, 1]]
+        next_q_chosen = next_q[torch.arange(batch_size), :, actions[:, 1], actions[:, 2]]
         _, a_prime = next_q_chosen.max(1, True)
         return a_prime
 
     def get_a_prime():
         next_q = FCQ(next_state, next_block)
-        aidx_x = next_q.max(1)[0].max(2)[0].max(1)[1]
-        aidx_y = next_q.max(1)[0].max(1)[0].max(1)[1]
+        aidx_y = next_q.max(1)[0].max(2)[0].max(1)[1]
+        aidx_x = next_q.max(1)[0].max(1)[0].max(1)[1]
         aidx_th = next_q.max(2)[0].max(2)[0].max(1)[1]
-        return aidx_th, aidx_x, aidx_y
+        return aidx_th, aidx_y, aidx_x
 
     a_prime = get_a_prime()
 
     next_q_target = FCQ_target(next_state, next_block)
     q_target_s_a_prime = next_q_target[torch.arange(batch_size), a_prime[0], a_prime[1], a_prime[2]].unsqueeze(1)
-    #next_q_target_chosen = next_q_target[torch.arange(batch_size), :, actions[:, 0], actions[:, 1]]
-    #q_target_s_a_prime = next_q_target_chosen.gather(1, a_prime)
     y_target = rewards + gamma * not_done * q_target_s_a_prime
 
     q_values = FCQ(state, block)
-    pred = q_values[torch.arange(batch_size), actions[:, 2], actions[:, 0], actions[:, 1]]
+    pred = q_values[torch.arange(batch_size), actions[:, 0], actions[:, 1], actions[:, 2]]
     pred = pred.view(-1, 1)
 
     loss = criterion(y_target, pred)
