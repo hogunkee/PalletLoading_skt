@@ -13,7 +13,8 @@ class Floor1(object):
                  action_norm=False,
                  render=False,
                  block_size_min=0.2,
-                 block_size_max=0.4
+                 block_size_max=0.4,
+                 show_q=False
                  ):
         """
         resolution: int (default: 512)
@@ -42,17 +43,32 @@ class Floor1(object):
         self.render = render
         self.block_size_min = block_size_min
         self.block_size_max = block_size_max
+        self.show_q = show_q
+        self.q_value = None
 
         if self.render:
-            plot0 = plt.subplot2grid((2,3), (0,0))
-            plot1 = plt.subplot2grid((2,3), (0,1))
-            plot2 = plt.subplot2grid((2,3), (0,2))
-            plot3 = plt.subplot2grid((2,3), (1,0), colspan=3)
-            plot0.set_title('previous state')
-            plot1.set_title('current state')
-            plot2.set_title('next block')
-            plot3.set_title('next blocks')
-            self.plots = [plot0, plot1, plot2, plot3]
+            if self.show_q:
+                plot0 = plt.subplot2grid((2,4), (0,0))
+                plot1 = plt.subplot2grid((2,4), (0,1))
+                plot2 = plt.subplot2grid((2,4), (0,2))
+                plot3 = plt.subplot2grid((2,4), (0,3))
+                plot4 = plt.subplot2grid((2,4), (1,0), colspan=4)
+                plot0.set_title('Previous state')
+                plot1.set_title('Q-value')
+                plot2.set_title('Current state')
+                plot3.set_title('Next block')
+                plot4.set_title('Next blocks')
+                self.plots = [plot0, plot1, plot2, plot3, plot4]
+            else:
+                plot0 = plt.subplot2grid((2,3), (0,0))
+                plot1 = plt.subplot2grid((2,3), (0,1))
+                plot2 = plt.subplot2grid((2,3), (0,2))
+                plot3 = plt.subplot2grid((2,3), (1,0), colspan=3)
+                plot0.set_title('Previous state')
+                plot1.set_title('Current state')
+                plot2.set_title('Next block')
+                plot3.set_title('Next blocks')
+                self.plots = [plot0, plot1, plot2, plot3]
             for i, p in enumerate(self.plots):
                 p.set_xticks([])
                 p.set_yticks([])
@@ -87,6 +103,14 @@ class Floor1(object):
         pre_state_pad[y, x] = (1, 0, 0)
         self.plots[0].imshow(pre_state_pad)
 
+        if self.show_q:
+            if self.q_value is not None:
+                q_value_pad = np.pad(self.q_value, (pad, pad), 'constant')
+                self.plots[1].imshow(q_value_pad)
+            else:
+                q_value_empty = np.zeros_like(pad_mask)
+                self.plots[1].imshow(q_value_empty)
+
         state_pad = np.ones([int(1.2*self.resolution), int(1.2*self.resolution), 3]) * 0.7
         y, x = np.where(self.state==0)
         state_pad[y + pad, x + pad] = (1, 1, 1)
@@ -100,7 +124,7 @@ class Floor1(object):
         state_pad[y + pad, x + pad] = (1, 0, 0)
         y, x = np.where(np.all(state_pad!=[0.7, 0.7, 0.7], axis=-1) & (pad_mask==1))
         state_pad[y, x] = (1, 0, 0)
-        self.plots[1].imshow(state_pad)
+        self.plots[-3].imshow(state_pad)
 
         block_figures = None
         if self.step_count==0:
@@ -121,13 +145,13 @@ class Floor1(object):
             block_fig[min_y: max_y, min_x: max_x] = [0, 0, 0]
 
             if i==0:
-                self.plots[2].imshow(block_fig)
+                self.plots[-2].imshow(block_fig)
             else:
                 if block_figures is None:
                     block_figures = block_fig
                 else:
                     block_figures = np.concatenate([block_figures, block_fig], axis=1)
-        self.plots[3].imshow(block_figures)
+        self.plots[-1].imshow(block_figures)
         plt.draw()
         # plt.pause(0.01)
         plt.pause(1)

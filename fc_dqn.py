@@ -68,43 +68,6 @@ def evaluate(env, model_path='', num_trials=10, b1=0.1, b2=0.1, show_q=False, n_
     log_eplen = []
 
     pre_action = None
-    if show_q:
-        plt.rc('axes', labelsize=8)
-        plt.rc('font', size=8)
-        plt.show()
-        fig = plt.figure()
-        fig.set_figheight(3)
-        fig.set_figwidth(7)
-
-        ax0 = fig.add_subplot(131)
-        ax1 = fig.add_subplot(132)
-        ax2 = fig.add_subplot(133)
-        ax0.set_xticks([])
-        ax0.set_yticks([])
-        ax1.set_xticks([])
-        ax1.set_yticks([])
-        ax2.set_xticks([])
-        ax2.set_yticks([])
-        ax0.set_title('Goal')
-        ax1.set_title('State')
-        ax2.set_title('Q-value')
-
-        fig2, ax = plt.subplots(2, 4)
-        fig2.set_figwidth(10)
-        for i in range(2):
-            for j in range(4):
-                ax[i][j].set_xticks([])
-                ax[i][j].set_yticks([])
-                ax[i][j].set_title("%d\xb0" %((4*i+j)*45))
-
-        s0 = deepcopy(state[0]).transpose([1,2,0])
-        s1 = deepcopy(state[1]).transpose([1, 2, 0])
-        im0 = ax0.imshow(s1)
-        im = ax1.imshow(s0)
-        im2 = ax2.imshow(np.zeros_like(s0))
-        plt.show(block=False)
-        fig.canvas.draw()
-        fig.canvas.draw()
 
     for ne in range(num_trials):
         ep_len = 0
@@ -120,22 +83,7 @@ def evaluate(env, model_path='', num_trials=10, b1=0.1, b2=0.1, show_q=False, n_
             ep_len += 1
             action, q_map = get_action(env, FCQ, state, block, epsilon=0.0, pre_action=pre_action, with_q=True)
             if show_q:
-                s0 = deepcopy(state).transpose([1, 2, 0])
-                s1 = deepcopy(goal).transpose([1, 2, 0])
-                im0 = ax0.imshow(s1)
-                s0[action[0], action[1]] = [1, 0, 0]
-                # q_map = q_map[0]
-                for i in range(2):
-                    for j in range(4):
-                        ax[i][j].imshow(q_map[4*i+j], vmin=-0.2, vmax=1.5)
-                q_map = q_map.transpose([1,2,0]).max(2)
-                # q_map[action[0], action[1]] = 1.5
-                ax1.imshow(s0)
-                ax2.imshow(q_map, vmin=-0.2, vmax=1.5)
-
-                fig.canvas.draw()
-                fig2.canvas.draw()
-
+                env.q_value = q_map[0]
             obs, reward, done = env.step(action[1:])
             next_state, next_block = obs
             if len(next_state.shape)==2:
@@ -155,8 +103,8 @@ def evaluate(env, model_path='', num_trials=10, b1=0.1, b2=0.1, show_q=False, n_
         print("EP{}".format(ne+1), end=" / ")
         print("reward:{0:.2f}".format(log_returns[-1]), end=" / ")
         print("eplen:{0:.1f}".format(log_eplen[-1]), end=" / ")
-        print(" / mean reward:{0:.1f}".format(np.mean(log_returns)), end="")
-        print(" / mean eplen:{0:.1f}".format(np.mean(log_eplen)), end="")
+        print("mean reward:{0:.1f}".format(np.mean(log_returns)), end=" / ")
+        print("mean eplen:{0:.1f}".format(np.mean(log_eplen)))
 
     print()
     print("="*80)
@@ -244,21 +192,6 @@ def learning(
     max_return = -100
     st = time.time()
 
-    if show_q:
-        fig = plt.figure()
-        ax0 = fig.add_subplot(131)
-        ax1 = fig.add_subplot(132)
-        ax2 = fig.add_subplot(133)
-
-        s0 = deepcopy(state).transpose([1,2,0])
-        s1 = deepcopy(goal).transpose([1, 2, 0])
-        im0 = ax0.imshow(s1)
-        im = ax1.imshow(s0)
-        im2 = ax2.imshow(np.zeros_like(s0))
-        plt.show(block=False)
-        fig.canvas.draw()
-        fig.canvas.draw()
-
     count_steps = 0
     learning_starts = False
     for ne in range(total_episodes):
@@ -280,17 +213,7 @@ def learning(
             ep_len += 1
             action, q_map = get_action(env, FCQ, state, block, epsilon=epsilon, pre_action=pre_action, with_q=True)
             if show_q:
-                s0 = deepcopy(state).transpose([1, 2, 0])
-                s1 = deepcopy(goal).transpose([1, 2, 0])
-                im0 = ax0.imshow(s1)
-                s0[action[0], action[1]] = [1, 0, 0]
-                # q_map = q_map[0]
-                q_map = q_map.transpose([1,2,0]).max(2)
-                im = ax1.imshow(s0)
-                im2 = ax2.imshow(q_map/q_map.max())
-                print('min_q:', q_map.min(), '/ max_q:', q_map.max())
-                fig.canvas.draw()
-
+                env.q_value = q_map[0]
             obs, reward, done = env.step(action[1:])
             next_state, next_block = obs
             if len(next_state.shape)==2:
@@ -486,7 +409,8 @@ if __name__=='__main__':
             action_norm=False,
             render=render,
             block_size_min=b1,
-            block_size_max=b2
+            block_size_max=b2,
+            show_q=show_q
             )
 
     # learning configuration #
