@@ -238,6 +238,43 @@ class FCQResNet(nn.Module):
             frames = []
             from matplotlib import pyplot as plt
 
+        B0 = x.size()[0]
+        pad = self.pad
+        x_pad = F.pad(x, (pad, pad, pad, pad), mode='constant', value=1)
+
+        x_rotate_list = []
+        for r_idx in range(self.n_actions):
+            x_rotate = torch.rot90(x_pad, k=r_idx * 3, dims=[2, 3])
+            x_rotate_list.append(x_rotate)
+        x_cat = torch.cat(x_rotate_list, axis=0)
+
+        h = F.relu(self.bn1(self.conv1(x_cat)))
+        h = self.layer1(h)
+        h = self.layer2(h)
+        h = self.layer3(h)
+        h = self.layer4(h)
+
+        B1, C, H, W = h.size()
+        h_block = block.view(B1, 2, 1, 1).repeat([1, 1, H, W])
+        h_cat = torch.cat([h, h_block], axis=1)
+        h = self.fully_conv(h_cat)
+        h = self.upscore(h)
+        
+        output_prob = []
+        for r_idx in range(self.n_actions)
+            h_after = h[r_idx * B0: (r_idx + 1) * B0]
+            h_after = torch.rot90(h_after, k=r_idx * 1, dims=[2,3])
+            h_after = h_after[:, :, pad:-pad, pad:-pad]
+            output_prob.append(h_after)
+
+        return torch.cat(output_prob, 1)
+
+
+    def forward2(self, x, block, debug=False):
+        if debug:
+            frames = []
+            from matplotlib import pyplot as plt
+
         pad = self.pad
         x_pad = F.pad(x, (pad, pad, pad, pad), mode='constant', value=1)
         output_prob = []
