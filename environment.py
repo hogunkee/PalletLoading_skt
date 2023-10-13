@@ -273,7 +273,7 @@ class PalletLoading(object):
         action = np.round(np.array(normalized_action) * self.obs_resolution)
         # make box region #
         cy, cx = action
-        by, bx = np.round(np.array(self.next_block_rotated)*self.render_resolution).astype(int)
+        by, bx = np.round(np.array(self.next_block_rotated)*self.obs_resolution).astype(int)
         min_y = np.floor(cy - (by + 1e-5) / 2).astype(int)
         min_x = np.floor(cx - (bx + 1e-5) / 2).astype(int)
         max_y = np.floor(cy + (by + 1e-5) / 2).astype(int)
