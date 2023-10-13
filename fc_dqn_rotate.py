@@ -174,13 +174,6 @@ def learning(
     if not os.path.exists("results/board/"):
         os.makedirs("results/board/")
 
-    plt.show(block=False)
-    plt.rc('axes', labelsize=6)
-    plt.rc('font', size=6)
-
-    #lr_decay = 0.98
-    #lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=lr_decay)
-
     if len(log_epsilon) == 0:
         epsilon = 0.5 #1.0
         start_epsilon = 0.5

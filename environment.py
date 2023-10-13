@@ -48,17 +48,18 @@ class Floor1(object):
 
         if self.render:
             if self.show_q:
-                plot0 = plt.subplot2grid((2,5), (0,0))
-                plot1 = plt.subplot2grid((2,5), (0,1))
-                plot2 = plt.subplot2grid((2,5), (0,2))
-                plot3 = plt.subplot2grid((2,5), (0,3))
-                plot4 = plt.subplot2grid((2,5), (0,4))
-                plot5 = plt.subplot2grid((2,5), (1,0), colspan=5)
+                plt.figure(figsize=(10,5))
+                plot0 = plt.subplot2grid((2,4), (0,0))
+                plot1 = plt.subplot2grid((2,4), (0,1))
+                plot2 = plt.subplot2grid((2,4), (0,2))
+                plot3 = plt.subplot2grid((2,4), (0,3))
+                plot4 = plt.subplot2grid((2,4), (1,3))
+                plot5 = plt.subplot2grid((2,4), (1,0), colspan=3)
                 plot0.set_title('Previous state')
                 plot1.set_title('Current state')
                 plot2.set_title('Next block')
-                plot3.set_title('Q-value 0')
-                plot4.set_title('Q-value 1')
+                plot3.set_title('Q-value rot-0')
+                plot4.set_title('Q-value rot-90')
                 plot5.set_title('Next blocks')
                 self.plots = [plot0, plot1, plot2, plot3, plot4, plot5]
             else:
@@ -112,13 +113,14 @@ class Floor1(object):
                                         constant_values=self.q_value.min())
                     self.plots[3].imshow(q_value_pad)
                 elif len(self.q_value.shape)==3:
-                    i, _q in enumerate(self.q_value):
+                    for i, _q in enumerate(self.q_value):
                         q_value_pad = np.pad(_q, (pad, pad), 'constant', \
                                             constant_values=_q.min())
                         self.plots[3 + i].imshow(q_value_pad)
             else:
                 q_value_empty = np.zeros_like(pad_mask)
                 self.plots[3].imshow(q_value_empty)
+                self.plots[4].imshow(q_value_empty)
 
         state_pad = np.ones([int(1.2*self.resolution), int(1.2*self.resolution), 3]) * 0.7
         y, x = np.where(self.state==0)
