@@ -164,7 +164,7 @@ class Floor1(object):
 
     def init_scenario(self):
         state = np.zeros([self.resolution-2, self.resolution-2])
-        state = np.pad(state, (1, 1), 'constant', constant_values=(1))
+        #state = np.pad(state, (1, 1), 'constant', constant_values=(1))
         self.step_count = 0
 
         # next block: (height, width)

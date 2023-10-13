@@ -67,6 +67,7 @@ class FCQResNetSmall(nn.Module):
         self.in_channel = 8
         self.n_actions = n_actions
         num_blocks = [2, 2, 1]
+        self.pad = 2
 
         self.conv1 = nn.Conv2d(in_ch, n_hidden, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(n_hidden)
@@ -118,19 +119,14 @@ class FCQResNetSmall(nn.Module):
             frames = []
             from matplotlib import pyplot as plt
 
-        x_pad = F.pad(x, (10, 10, 10, 10), mode='constant')
+        pad = self.pad
+        x_pad = F.pad(x, (pad, pad, pad, pad), mode='constant', value=1)
         output_prob = []
         for r_idx in range(self.n_actions):
-            theta = r_idx * (2*np.pi / self.n_actions)
-
-            affine_mat_before = np.asarray([
-                [np.cos(-theta), np.sin(-theta), 0],
-                [-np.sin(-theta), np.cos(-theta), 0]])
-            affine_mat_before.shape = (2, 3, 1)
-            affine_mat_before = torch.from_numpy(affine_mat_before).permute(2, 0, 1).float()
-            affine_mat_before = affine_mat_before.repeat(x.size()[0], 1, 1)
-            flow_grid_before = F.affine_grid(Variable(affine_mat_before, requires_grad=False).type(dtype), x_pad.size(), align_corners=False)
-            x_rotate = F.grid_sample(x_pad, flow_grid_before, align_corners=False, mode='nearest')
+            if r_idx==0:
+                x_rotate = x_pad
+            elif r_dix==1:
+                x_rotate = torch.rot90(x_pad, k=3, dims=[2, 3])
 
             h = F.relu(self.bn1(self.conv1(x_rotate)))
             h = self.layer1(h)
@@ -143,20 +139,11 @@ class FCQResNetSmall(nn.Module):
             # print(h.shape)
             h = self.upscore(h)
 
-            affine_mat_after = np.asarray([
-                [np.cos(theta), np.sin(theta), 0],
-                [-np.sin(theta), np.cos(theta), 0]
-                ])
-            affine_mat_after.shape = (2, 3, 1)
-            affine_mat_after = torch.from_numpy(affine_mat_after).permute(2, 0, 1).float()
-            affine_mat_after = affine_mat_after.repeat(x.size()[0], 1, 1)
-            flow_grid_after = F.affine_grid(Variable(affine_mat_after, requires_grad=False).type(dtype), h.size(), align_corners=False)
-
-            h_after = F.grid_sample(h, flow_grid_after, align_corners=False, mode='nearest')
-            h_after = h_after[:, :,
-                      int(h_after.size()[2]/2 - x.size()[2]/2):int(h_after.size()[2]/2 + x.size()[2]/2),
-                      int(h_after.size()[3]/2 - x.size()[3]/2):int(h_after.size()[3]/2 + x.size()[3]/2)
-                      ].contiguous()
+            if r_idx==0:
+                h_after = h
+            else:
+                h_after = torch.rot90(h, k=1, dims=[2,3])
+            h_after = h_after[:, :, pad:-pad, pad:-pad]
             output_prob.append(h_after)
 
             if debug:
@@ -198,6 +185,7 @@ class FCQResNet(nn.Module):
         self.in_channel = 8
         self.n_actions = n_actions
         num_blocks = [2, 2, 1, 1]
+        self.pad = 2
 
         self.conv1 = nn.Conv2d(in_ch, n_hidden, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(n_hidden)
@@ -250,19 +238,14 @@ class FCQResNet(nn.Module):
             frames = []
             from matplotlib import pyplot as plt
 
-        x_pad = F.pad(x, (10, 10, 10, 10), mode='constant')
+        pad = self.pad
+        x_pad = F.pad(x, (pad, pad, pad, pad), mode='constant', value=1)
         output_prob = []
         for r_idx in range(self.n_actions):
-            theta = r_idx * (2*np.pi / self.n_actions)
-
-            affine_mat_before = np.asarray([
-                [np.cos(-theta), np.sin(-theta), 0],
-                [-np.sin(-theta), np.cos(-theta), 0]])
-            affine_mat_before.shape = (2, 3, 1)
-            affine_mat_before = torch.from_numpy(affine_mat_before).permute(2, 0, 1).float()
-            affine_mat_before = affine_mat_before.repeat(x.size()[0], 1, 1)
-            flow_grid_before = F.affine_grid(Variable(affine_mat_before, requires_grad=False).type(dtype), x_pad.size(), align_corners=False)
-            x_rotate = F.grid_sample(x_pad, flow_grid_before, align_corners=False, mode='nearest')
+            if r_idx==0:
+                x_rotate = x_pad
+            elif r_dix==1:
+                x_rotate = torch.rot90(x_pad, k=3, dims=[2, 3])
 
             h = F.relu(self.bn1(self.conv1(x_rotate)))
             h = self.layer1(h)
@@ -276,20 +259,15 @@ class FCQResNet(nn.Module):
             # print(h.shape)
             h = self.upscore(h)
 
-            affine_mat_after = np.asarray([
-                [np.cos(theta), np.sin(theta), 0],
-                [-np.sin(theta), np.cos(theta), 0]
-                ])
-            affine_mat_after.shape = (2, 3, 1)
-            affine_mat_after = torch.from_numpy(affine_mat_after).permute(2, 0, 1).float()
-            affine_mat_after = affine_mat_after.repeat(x.size()[0], 1, 1)
-            flow_grid_after = F.affine_grid(Variable(affine_mat_after, requires_grad=False).type(dtype), h.size(), align_corners=False)
-
-            h_after = F.grid_sample(h, flow_grid_after, align_corners=False, mode='nearest')
-            h_after = h_after[:, :,
-                      int(h_after.size()[2]/2 - x.size()[2]/2):int(h_after.size()[2]/2 + x.size()[2]/2),
-                      int(h_after.size()[3]/2 - x.size()[3]/2):int(h_after.size()[3]/2 + x.size()[3]/2)
-                      ].contiguous()
+            if r_idx==0:
+                h_after = h
+            else:
+                h_after = torch.rot90(h, k=1, dims=[2,3])
+            h_after = h_after[:, :, pad:-pad, pad:-pad]
+            #h_after = h_after[:, :,
+            #          int(h_after.size()[2]/2 - x.size()[2]/2):int(h_after.size()[2]/2 + x.size()[2]/2),
+            #          int(h_after.size()[3]/2 - x.size()[3]/2):int(h_after.size()[3]/2 + x.size()[3]/2)
+            #          ].contiguous()
             output_prob.append(h_after)
 
             if debug:
