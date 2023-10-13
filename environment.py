@@ -305,7 +305,7 @@ class PalletLoading(object):
         
         # denormalize the action
         if not self.action_norm:
-            action_pos = np.array(action_pos) / self.render_resolution
+            action_pos = np.array(action_pos) / self.obs_resolution
 
         # rotate block by an action
         if action_rot:
