@@ -244,7 +244,7 @@ class FCQResNet(nn.Module):
         for r_idx in range(self.n_actions):
             if r_idx==0:
                 x_rotate = x_pad
-            elif r_dix==1:
+            elif r_idx==1:
                 x_rotate = torch.rot90(x_pad, k=3, dims=[2, 3])
 
             h = F.relu(self.bn1(self.conv1(x_rotate)))
