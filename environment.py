@@ -71,7 +71,7 @@ class PalletLoading(object):
         num_steps=100,
         num_preview=5,
         box_norm=False,
-        action_nom=False,
+        action_norm=False,
         render=False,
         block_size_min=0.2,
         block_size_max=0.4,
@@ -307,7 +307,7 @@ class PalletLoading(object):
         
         # denormalize the action
         if not self.action_norm:
-            action_pos = action_pos / self.render_resolution
+            action_pos = np.array(action_pos) / self.render_resolution
 
         # rotate block by an action
         if action_rot:
@@ -331,7 +331,7 @@ class PalletLoading(object):
         # check collision #
         new_block = Block(x_action, y_action, block_width, block_height)
         #if not self.floor.load(new_block):
-        if len(np.where(self.obs_image>1)[0]) > 0:
+        if len(np.where(self.obs_img>1)[0]) > 0:
             collision = True
 
         # if no OOR of collision, the placement succeeds #

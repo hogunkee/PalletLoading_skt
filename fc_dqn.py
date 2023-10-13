@@ -406,7 +406,7 @@ if __name__=='__main__':
             num_steps=max_steps,
             num_preview=5,
             box_norm=True,
-            action_norm=False,
+            #action_norm=False,
             render=render,
             block_size_min=b1,
             block_size_max=b2,
