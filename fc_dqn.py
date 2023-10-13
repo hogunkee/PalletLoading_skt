@@ -84,7 +84,7 @@ def evaluate(env, model_path='', num_trials=10, b1=0.1, b2=0.1, show_q=False, n_
             action, q_map = get_action(env, FCQ, state, block, epsilon=0.0, pre_action=pre_action, with_q=True)
             if show_q:
                 env.q_value = q_map[0]
-            obs, reward, done = env.step(action[1:])
+            obs, reward, done = env.step(action)
             next_state, next_block = obs
             if len(next_state.shape)==2:
                 next_state = next_state[np.newaxis, :, :]
@@ -214,7 +214,7 @@ def learning(
             action, q_map = get_action(env, FCQ, state, block, epsilon=epsilon, pre_action=pre_action, with_q=True)
             if show_q:
                 env.q_value = q_map[0]
-            obs, reward, done = env.step(action[1:])
+            obs, reward, done = env.step(action)
             next_state, next_block = obs
             if len(next_state.shape)==2:
                 next_state = next_state[np.newaxis, :, :]

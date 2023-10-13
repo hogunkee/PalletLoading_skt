@@ -185,12 +185,22 @@ class Floor1(object):
 
         # denormalize action #
         if self.action_norm:
-            action = np.round(np.array(action) * self.resolution)
+            action_pos = np.array(action[1:]) * self.resolution
+        else:
+            action_pos = np.array(action[1:])
+        action_rot = action[0]
 
         # make box region #
-        cy, cx = action
-        #by, bx = self.next_block
-        by, bx = np.round(np.array(self.next_block) * self.resolution).astype(int)
+        cy, cx = action_pos
+        if self.box_norm:
+            next_block = np.array(self.next_block) * self.resolution
+        else:
+            next_block = np.round(np.array(self.next_block) * self.resolution).astype(int)
+        if action_rot==0:
+            by, bx = next_block
+        elif action_rot==1:
+            bx, by = next_block
+            
         min_y = np.round(cy - (by-1e-5)/2).astype(int)
         min_x = np.round(cx - (bx-1e-5)/2).astype(int)
         max_y = np.round(cy + (by-1e-5)/2).astype(int)
