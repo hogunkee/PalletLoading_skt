@@ -136,7 +136,6 @@ class FCQResNetSmall(nn.Module):
             h_block = block.view(B, 2, 1, 1).repeat([1, 1, H, W])
             h_cat = torch.cat([h, h_block], axis=1)
             h = self.fully_conv(h_cat)
-            # print(h.shape)
             h = self.upscore(h)
 
             if r_idx==0:
@@ -254,89 +253,18 @@ class FCQResNet(nn.Module):
         h = self.layer3(h)
         h = self.layer4(h)
 
-        B1, C, H, W = h.size()
-        h_block = block.view(B1, 2, 1, 1).repeat([1, 1, H, W])
+        _, C, H, W = h.size()
+        h_block = block.view(B0, 2, 1, 1).repeat([self.n_actions, 1, H, W])
         h_cat = torch.cat([h, h_block], axis=1)
         h = self.fully_conv(h_cat)
         h = self.upscore(h)
         
         output_prob = []
-        for r_idx in range(self.n_actions)
+        for r_idx in range(self.n_actions):
             h_after = h[r_idx * B0: (r_idx + 1) * B0]
             h_after = torch.rot90(h_after, k=r_idx * 1, dims=[2,3])
             h_after = h_after[:, :, pad:-pad, pad:-pad]
             output_prob.append(h_after)
 
         return torch.cat(output_prob, 1)
-
-
-    def forward2(self, x, block, debug=False):
-        if debug:
-            frames = []
-            from matplotlib import pyplot as plt
-
-        pad = self.pad
-        x_pad = F.pad(x, (pad, pad, pad, pad), mode='constant', value=1)
-        output_prob = []
-        for r_idx in range(self.n_actions):
-            if r_idx==0:
-                x_rotate = x_pad
-            elif r_idx==1:
-                x_rotate = torch.rot90(x_pad, k=3, dims=[2, 3])
-
-            h = F.relu(self.bn1(self.conv1(x_rotate)))
-            h = self.layer1(h)
-            h = self.layer2(h)
-            h = self.layer3(h)
-            h = self.layer4(h)
-            B, C, H, W = h.size()
-            h_block = block.view(B, 2, 1, 1).repeat([1, 1, H, W])
-            h_cat = torch.cat([h, h_block], axis=1)
-            h = self.fully_conv(h_cat)
-            # print(h.shape)
-            h = self.upscore(h)
-
-            if r_idx==0:
-                h_after = h
-            else:
-                h_after = torch.rot90(h, k=1, dims=[2,3])
-            h_after = h_after[:, :, pad:-pad, pad:-pad]
-            #h_after = h_after[:, :,
-            #          int(h_after.size()[2]/2 - x.size()[2]/2):int(h_after.size()[2]/2 + x.size()[2]/2),
-            #          int(h_after.size()[3]/2 - x.size()[3]/2):int(h_after.size()[3]/2 + x.size()[3]/2)
-            #          ].contiguous()
-            output_prob.append(h_after)
-
-            if debug:
-                f = x_pad.detach().cpu().numpy()[0].transpose([1, 2, 0])
-                f_rotate = x_rotate.detach().cpu().numpy()[0].transpose([1, 2, 0])
-
-                x_re_rotate = F.grid_sample(x_rotate, flow_grid_after, align_corners=False, mode='nearest')
-                f_re_rotate = x_re_rotate.detach().cpu().numpy()[0].transpose([1, 2, 0])
-                frames.append([f_rotate, f_re_rotate])
-
-        if debug:
-            fig = plt.figure()
-            for i in range(len(frames)):
-                ax = fig.add_subplot(4, self.n_actions, i + 1)
-                ax.set_xticks([])
-                ax.set_yticks([])
-                ax.set_title("%d\xb0" %(i*45))
-                plt.imshow(frames[i][0][..., :3])
-                ax = fig.add_subplot(4, self.n_actions, i + len(frames) + 1)
-                ax.set_xticks([])
-                ax.set_yticks([])
-                plt.imshow(frames[i][0][..., 3:])
-
-                ax = fig.add_subplot(4, self.n_actions, i + 2*len(frames) + 1)
-                ax.set_xticks([])
-                ax.set_yticks([])
-                plt.imshow(frames[i][1][..., :3])
-                ax = fig.add_subplot(4, self.n_actions, i + 3*len(frames) + 1)
-                ax.set_xticks([])
-                ax.set_yticks([])
-                plt.imshow(frames[i][1][..., 3:])
-            plt.show()
-        return torch.cat(output_prob, 1)
-
 
