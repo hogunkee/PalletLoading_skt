@@ -32,7 +32,7 @@ def get_action(env, fc_qnet, state, block, epsilon, pre_action=None, with_q=Fals
             block_tensor = torch.FloatTensor([block]).cuda()
             q_value = fc_qnet(state_tensor, block_tensor)
             q_raw = q_value[0].detach().cpu().numpy()
-            q = np.zeros_like(q_raw)
+            q = np.ones_like(q_raw) * q_raw.min()
             q[:, crop_min:crop_max, crop_min:crop_max] = q_raw[:, crop_min:crop_max, crop_min:crop_max]
     else:
         state_tensor = torch.FloatTensor([state]).cuda()
@@ -40,7 +40,7 @@ def get_action(env, fc_qnet, state, block, epsilon, pre_action=None, with_q=Fals
         block_tensor = torch.FloatTensor([block]).cuda()
         q_value = fc_qnet(state_tensor, block_tensor)
         q_raw = q_value[0].detach().cpu().numpy()
-        q = np.zeros_like(q_raw)
+        q = np.ones_like(q_raw) * q_raw.min()
         q[:, crop_min:crop_max, crop_min:crop_max] = q_raw[:, crop_min:crop_max, crop_min:crop_max]
         # avoid redundant motion #
         if pre_action is not None:
@@ -83,7 +83,7 @@ def evaluate(env, model_path='', num_trials=10, b1=0.1, b2=0.1, show_q=False, n_
             ep_len += 1
             action, q_map = get_action(env, FCQ, state, block, epsilon=0.0, pre_action=pre_action, with_q=True)
             if show_q:
-                env.q_value = q_map[0]
+                env.q_value = q_map
             obs, reward, done = env.step(action)
             next_state, next_block = obs
             if len(next_state.shape)==2:
@@ -213,7 +213,7 @@ def learning(
             ep_len += 1
             action, q_map = get_action(env, FCQ, state, block, epsilon=epsilon, pre_action=pre_action, with_q=True)
             if show_q:
-                env.q_value = q_map[0]
+                env.q_value = q_map
             obs, reward, done = env.step(action)
             next_state, next_block = obs
             if len(next_state.shape)==2:
