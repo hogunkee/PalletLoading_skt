@@ -402,7 +402,7 @@ if __name__=='__main__':
         wandb.run.save()
 
     env = Floor1(
-            obs_resolution=resolution, 
+            resolution=resolution, 
             num_steps=max_steps,
             num_preview=5,
             box_norm=True,
