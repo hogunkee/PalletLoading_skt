@@ -10,7 +10,7 @@ import torch
 import torch.nn as nn
 from utils import *
 from replay_buffer import ReplayBuffer
-from environment import PalletLoading #Floor1
+from environment import Floor1
 
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -401,16 +401,16 @@ if __name__=='__main__':
         wandb.config.update(args)
         wandb.run.save()
 
-    env = PalletLoading(
+    env = Floor1(
             obs_resolution=resolution, 
             num_steps=max_steps,
             num_preview=5,
             box_norm=True,
-            #action_norm=False,
+            action_norm=False,
             render=render,
             block_size_min=b1,
             block_size_max=b2,
-            #show_q=show_q
+            show_q=show_q
             )
 
     # learning configuration #
