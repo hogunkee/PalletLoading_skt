@@ -71,6 +71,7 @@ class PalletLoading(object):
         num_steps=100,
         num_preview=5,
         box_norm=False,
+        action_nom=False,
         render=False,
         block_size_min=0.2,
         block_size_max=0.4,
@@ -100,6 +101,7 @@ class PalletLoading(object):
         self.num_steps = num_steps
         self.num_preview = num_preview
         self.box_norm = box_norm
+        self.action_norm = action_norm
         self.render = render
         self.block_size_min = block_size_min
         self.block_size_max = block_size_max
@@ -269,17 +271,18 @@ class PalletLoading(object):
         self.render_state = self.render_state + box_placed
         self.render_box = [min_y, max_y, min_x, max_x]
 
-    def place_block_in_obs_img(self, action):
+    def place_block_in_obs_img(self, normalized_action):
+        action = np.round(np.array(normalized_action) * self.obs_resolution)
         # make box region #
         cy, cx = action
         by, bx = self.next_block_rotated
-        min_y = np.floor((cy - (by + 1e-5) / 2) * self.obs_resolution + 0.5).astype(int)
-        min_x = np.floor((cx - (bx + 1e-5) / 2) * self.obs_resolution + 0.5).astype(int)
-        max_y = np.floor((cy + (by + 1e-5) / 2) * self.obs_resolution - 0.5).astype(int)
-        max_x = np.floor((cx + (bx + 1e-5) / 2) * self.obs_resolution - 0.5).astype(int)
+        min_y = np.floor(cy - (by + 1e-5) / 2).astype(int)
+        min_x = np.floor(cx - (bx + 1e-5) / 2).astype(int)
+        max_y = np.floor(cy + (by + 1e-5) / 2).astype(int)
+        max_x = np.floor(cx + (bx + 1e-5) / 2).astype(int)
 
         box_placed = np.zeros([self.obs_resolution, self.obs_resolution])
-        box_placed[min_y : max_y + 1, min_x : max_x + 1] = 1
+        box_placed[min_y : max_y, min_x : max_x] = 1
         self.obs_img = self.obs_img + box_placed
 
     def step(self, action):
@@ -302,6 +305,10 @@ class PalletLoading(object):
         else:
             raise Exception("Action space should be [p_x, p_y] or [p_x, p_y, roatation \in {0,1}]")
         
+        # denormalize the action
+        if not self.action_norm:
+            action_pos = action_pos / self.render_resolution
+
         # rotate block by an action
         if action_rot:
             self.next_block_rotated = np.array([self.next_block[1], self.next_block[0]])
@@ -309,7 +316,7 @@ class PalletLoading(object):
             self.next_block_rotated = self.next_block
 
         # clip action to (0.0, 1.0)
-        action_pos = np.clip(action_pos, 1e-5, 1 - 1e-5)
+        action_pos = np.clip(action_pos, 0.0, 1.0)
         if self.render:
             self.place_block_in_render_state(action_pos)
         self.place_block_in_obs_img(action_pos)
@@ -323,7 +330,8 @@ class PalletLoading(object):
 
         # check collision #
         new_block = Block(x_action, y_action, block_width, block_height)
-        if not self.floor.load(new_block):
+        #if not self.floor.load(new_block):
+        if len(np.where(self.obs_image>1)[0]) > 0:
             collision = True
 
         # if no OOR of collision, the placement succeeds #
