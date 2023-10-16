@@ -262,7 +262,7 @@ class FCQResNet(nn.Module):
         h_after = h_after[:, :, pad:-pad, pad:-pad]
         
         _, C2, H2, W2 = h_after.size() 
-        output_prob = h_after.view(2, -1, H2, W2).permute([1, 0, 2, 3])
+        output_prob = h_after.view(self.n_actions, -1, H2, W2).permute([1, 0, 2, 3])
         return output_prob
 
 
