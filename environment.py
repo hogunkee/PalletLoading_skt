@@ -255,6 +255,12 @@ class Floor1(object):
                 p_current = self.get_pad_from_scene(previous_state).sum()
                 p_next = self.get_pad_from_scene(self.state).sum()
                 reward = C * (p_box + p_current - p_next)
+            elif self.reward_type=='sparse2':
+                C = 1/100
+                p_box = self.get_pad_from_scene(box_placed).sum()
+                p_current = self.get_pad_from_scene(previous_state).sum()
+                p_next = self.get_pad_from_scene(self.state).sum()
+                reward = C * (p_box + p_current - p_next) + 0.2
             episode_end = False
 
         if self.render:
