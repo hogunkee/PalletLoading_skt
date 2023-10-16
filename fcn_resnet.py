@@ -241,6 +241,40 @@ class FCQResNet(nn.Module):
         pad = self.pad
         x_pad = F.pad(x, (pad, pad, pad, pad), mode='constant', value=1)
 
+        x_cat = x_pad.repeat([self.n_actions, 1, 1, 1])
+        h = F.relu(self.bn1(self.conv1(x_cat)))
+        h = self.layer1(h)
+        h = self.layer2(h)
+        h = self.layer3(h)
+        h = self.layer4(h)
+
+        _, C, H, W = h.size()
+        if self.n_actions==1:
+            h_block = block.view(B0, 2, 1, 1).repeat([self.n_actions, 1, H, W])
+        else:
+            h_block_origin = block.view(B0, 2, 1, 1).repeat([1, 1, H, W])
+            block_flipped = block[..., [1, 0]]
+            h_block_flipped = block_flipped.view(B0, 2, 1, 1).repeat([1, 1, H, W])
+            h_block = torch.cat([h_block_origin, h_block_flipped], axis=0)
+        h_cat = torch.cat([h, h_block], axis=1)
+        h = self.fully_conv(h_cat)
+        h_after = self.upscore(h)
+        h_after = h_after[:, :, pad:-pad, pad:-pad]
+        
+        _, C2, H2, W2 = h_after.size() 
+        output_prob = h_after.view(2, -1, H2, W2).permute([1, 0, 2, 3])
+        return output_prob
+
+
+    def forward2(self, x, block, debug=False):
+        if debug:
+            frames = []
+            from matplotlib import pyplot as plt
+
+        B0 = x.size()[0]
+        pad = self.pad
+        x_pad = F.pad(x, (pad, pad, pad, pad), mode='constant', value=1)
+
         x_rotate_list = []
         for r_idx in range(self.n_actions):
             x_rotate = torch.rot90(x_pad, k=r_idx * 3, dims=[2, 3])
