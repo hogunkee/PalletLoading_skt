@@ -260,8 +260,8 @@ class FCQResNet(nn.Module):
         h = self.fully_conv(h_cat)
         h_after = self.upscore(h)
         h_after = h_after[:, :, 
-                int((h_after.size()[2]-x.size()[1])/2):int((h_after.size()[2]+x.size()[1])/2),
-                int((h_after.size()[3]-x.size()[2])/2):int((h_after.size()[3]+x.size()[2])/2)
+                int((h_after.size()[2]-x.size()[2])/2):int((h_after.size()[2]+x.size()[2])/2),
+                int((h_after.size()[3]-x.size()[3])/2):int((h_after.size()[3]+x.size()[3])/2)
                 ]
         
         _, C2, H2, W2 = h_after.size() 
