@@ -329,6 +329,7 @@ if __name__=='__main__':
     parser.add_argument("--b2", default=0.25, type=float)
     parser.add_argument("--max_steps", default=30, type=int)
     parser.add_argument("--resolution", default=64, type=int)
+    parser.add_argument("--reward", default='binary', type=str)
     ## learning ##
     parser.add_argument("--lr", default=1e-4, type=float)
     parser.add_argument("--bs", default=128, type=int)
@@ -358,6 +359,7 @@ if __name__=='__main__':
     b2 = args.b2
     max_steps = args.max_steps
     resolution = args.resolution
+    reward_type = args.reward
 
     # evaluate configuration #
     evaluation = args.evaluate
@@ -403,7 +405,8 @@ if __name__=='__main__':
             render=render,
             block_size_min=b1,
             block_size_max=b2,
-            show_q=show_q
+            show_q=show_q,
+            reward_type=reward_type
             )
 
     # learning configuration #

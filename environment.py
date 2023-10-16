@@ -1,3 +1,4 @@
+import cv2
 import time
 import numpy as np
 import matplotlib
@@ -14,7 +15,8 @@ class Floor1(object):
                  render=False,
                  block_size_min=0.2,
                  block_size_max=0.4,
-                 show_q=False
+                 show_q=False,
+                 reward_type='binary',
                  ):
         """
         resolution: int (default: 512)
@@ -45,6 +47,7 @@ class Floor1(object):
         self.block_size_max = block_size_max
         self.show_q = show_q
         self.q_value = None
+        self.reward_type = reward_type
 
         if self.render:
             if self.show_q:
@@ -185,6 +188,12 @@ class Floor1(object):
         next_block = self.get_next_block()
         return state, next_block
 
+    def get_pad_from_scene(self, state):
+        state = state.astype(bool).astype(float)
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (10, 10))
+        padded = cv2.dilate(state, kernel).astype(bool).astype(float)
+        return padded - state
+
     def step(self, action):
         self.step_count += 1
         reward = 0.0
@@ -238,7 +247,14 @@ class Floor1(object):
 
         # if no OOR of collision, the placement succeeds #
         if not (out_of_range or collision):
-            reward = 1.0
+            if self.reward_type=='binary':
+                reward = 1.0
+            elif self.reward_type=='sparse':
+                C = 1/100
+                p_box = self.get_pad_from_scene(box_placed).sum()
+                p_current = self.get_pad_from_scene(previous_state).sum()
+                p_next = self.get_pad_from_scene(self.state).sum()
+                reward = C * (p_box + p_current - p_next)
             episode_end = False
 
         if self.render:
