@@ -259,7 +259,10 @@ class FCQResNet(nn.Module):
         h_cat = torch.cat([h, h_block], axis=1)
         h = self.fully_conv(h_cat)
         h_after = self.upscore(h)
-        h_after = h_after[:, :, pad:-pad, pad:-pad]
+        h_after = h_after[:, :, 
+                int((h_after.size()[2]-x.size()[1])/2):int((h_after.size()[2]+x.size()[1])/2),
+                int((h_after.size()[3]-x.size()[2])/2):int((h_after.size()[3]+x.size()[2])/2)
+                ]
         
         _, C2, H2, W2 = h_after.size() 
         output_prob = h_after.view(self.n_actions, -1, H2, W2).permute([1, 0, 2, 3])
