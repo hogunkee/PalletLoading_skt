@@ -188,12 +188,14 @@ class Floor1(object):
         next_block = self.get_next_block()
         return state, next_block
 
-    def get_pad_from_scene(self, state):
+    def get_pad_from_scene(self, state, pad_boundary=True):
         state = state.astype(bool).astype(float)
-        state_pad = np.pad(state, (1,1), 'constant', constant_values=(1))
+        if pad_boundary:
+            state = np.pad(state, (1,1), 'constant', constant_values=(1))
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (10, 10))
-        dilated = cv2.dilate(state_pad, kernel).astype(bool).astype(float)
-        dilated = dilated[1:-1, 1:-1]
+        dilated = cv2.dilate(state, kernel).astype(bool).astype(float)
+        if pad_boundary:
+            dilated = dilated[1:-1, 1:-1]
         return dilated - state
 
     def step(self, action):
@@ -253,13 +255,13 @@ class Floor1(object):
                 reward = 1.0
             elif self.reward_type=='sparse':
                 C = 1/100
-                p_box = self.get_pad_from_scene(box_placed).sum()
+                p_box = self.get_pad_from_scene(box_placed, False).sum()
                 p_current = self.get_pad_from_scene(previous_state).sum()
                 p_next = self.get_pad_from_scene(self.state).sum()
                 reward = C * (p_box + p_current - p_next)
             elif self.reward_type=='sparse2':
                 C = 1/100
-                p_box = self.get_pad_from_scene(box_placed).sum()
+                p_box = self.get_pad_from_scene(box_placed, False).sum()
                 p_current = self.get_pad_from_scene(previous_state).sum()
                 p_next = self.get_pad_from_scene(self.state).sum()
                 reward = C * (p_box + p_current - p_next) + 0.2
