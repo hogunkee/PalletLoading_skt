@@ -63,6 +63,7 @@ def evaluate(env, model_path='', num_trials=10, b1=0.1, b2=0.1, show_q=False, n_
     FCQ = FCQNet(2, 1).cuda()
     print('Loading trained model: {}'.format(model_path))
     FCQ.load_state_dict(torch.load(model_path))
+    FCQ.eval()
 
     log_returns = []
     log_eplen = []
