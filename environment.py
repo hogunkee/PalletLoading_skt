@@ -254,13 +254,13 @@ class Floor1(object):
         if not (out_of_range or collision):
             if self.reward_type=='binary':
                 reward = 1.0
-            elif self.reward_type=='sparse':
+            elif self.reward_type=='dense':
                 C = 1/100
                 p_box = self.get_pad_from_scene(box_placed, False).sum()
                 p_current = self.get_pad_from_scene(previous_state).sum()
                 p_next = self.get_pad_from_scene(self.state).sum()
                 reward = C * (p_box + p_current - p_next)
-            elif self.reward_type=='sparse2':
+            elif self.reward_type=='dense2':
                 C = 1/100
                 p_box = self.get_pad_from_scene(box_placed, False).sum()
                 p_current = self.get_pad_from_scene(previous_state).sum()
