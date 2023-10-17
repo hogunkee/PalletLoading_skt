@@ -190,9 +190,11 @@ class Floor1(object):
 
     def get_pad_from_scene(self, state):
         state = state.astype(bool).astype(float)
+        state_pad = np.pad(state, (1,1), 'constant', constant_values=(1))
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (10, 10))
-        padded = cv2.dilate(state, kernel).astype(bool).astype(float)
-        return padded - state
+        dilated = cv2.dilate(state_pad, kernel).astype(bool).astype(float)
+        dilated = dilated[1:-1, 1:-1]
+        return dilated - state
 
     def step(self, action):
         self.step_count += 1
