@@ -195,6 +195,7 @@ class Floor1(object):
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (10, 10))
         dilated = cv2.dilate(state, kernel).astype(bool).astype(float)
         if pad_boundary:
+            state = state[1:-1, 1:-1]
             dilated = dilated[1:-1, 1:-1]
         return dilated - state
 
