@@ -328,6 +328,7 @@ if __name__=='__main__':
     parser.add_argument("--render", action="store_true")
     parser.add_argument("--b1", default=0.1, type=float)
     parser.add_argument("--b2", default=0.25, type=float)
+    parser.add_argument("--discrete", action="store_true")
     parser.add_argument("--max_steps", default=30, type=int)
     parser.add_argument("--resolution", default=64, type=int)
     parser.add_argument("--reward", default='binary', type=str)
@@ -358,6 +359,7 @@ if __name__=='__main__':
     render = args.render
     b1 = args.b1
     b2 = args.b2
+    discrete_block = args.discrete
     max_steps = args.max_steps
     resolution = args.resolution
     reward_type = args.reward
@@ -406,6 +408,7 @@ if __name__=='__main__':
             render=render,
             block_size_min=b1,
             block_size_max=b2,
+            discrete_block=discrete_block,
             show_q=show_q,
             reward_type=reward_type
             )

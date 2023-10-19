@@ -15,6 +15,7 @@ class Floor1(object):
                  render=False,
                  block_size_min=0.2,
                  block_size_max=0.4,
+                 discrete_block=False,
                  show_q=False,
                  reward_type='binary',
                  ):
@@ -45,6 +46,7 @@ class Floor1(object):
         self.render = render
         self.block_size_min = block_size_min
         self.block_size_max = block_size_max
+        self.use_discrete_block = discrete_block
         self.show_q = show_q
         self.q_value = None
         self.reward_type = reward_type
@@ -172,7 +174,10 @@ class Floor1(object):
 
     def get_next_block(self):
         next_block = self.block_que.pop(0)
-        new_block = np.random.uniform(self.block_size_min, self.block_size_max, 2)
+        if self.use_discrete_block:
+            new_block = np.random.choice([0.2, 0.3, 0.4, 0.5], 2, True)
+        else:
+            new_block = np.random.uniform(self.block_size_min, self.block_size_max, 2)
         self.block_que.append(new_block)
         return next_block
 
@@ -183,7 +188,10 @@ class Floor1(object):
         self.step_count = 0
 
         # next block: (height, width)
-        self.block_que = np.random.uniform(self.block_size_min, self.block_size_max, [self.num_preview, 2]).tolist()
+        if self.use_discrete_block:
+            self.block_que = np.random.choice([0.2, 0.3, 0.4, 0.5], [self.num_preview, 2], True).tolist()
+        else:
+            self.block_que = np.random.uniform(self.block_size_min, self.block_size_max, [self.num_preview, 2]).tolist()
 
         next_block = self.get_next_block()
         return state, next_block
