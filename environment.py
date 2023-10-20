@@ -175,7 +175,7 @@ class Floor1(object):
     def get_next_block(self):
         next_block = self.block_que.pop(0)
         if self.use_discrete_block:
-            new_block = np.random.choice([0.2, 0.3, 0.4, 0.5], 2, True)
+            new_block = 0.9 * np.random.choice([0.2, 0.3, 0.4, 0.5], 2, True, p=[0.4, 0.3, 0.2, 0.1])
         else:
             new_block = np.random.uniform(self.block_size_min, self.block_size_max, 2)
         self.block_que.append(new_block)
@@ -189,7 +189,8 @@ class Floor1(object):
 
         # next block: (height, width)
         if self.use_discrete_block:
-            self.block_que = np.random.choice([0.2, 0.3, 0.4, 0.5], [self.num_preview, 2], True).tolist()
+            self.block_que = 0.9 * np.random.choice([0.2, 0.3, 0.4, 0.5], [self.num_preview, 2], True,\
+                                                    p=[0.4, 0.3, 0.2, 0.1]).tolist()
         else:
             self.block_que = np.random.uniform(self.block_size_min, self.block_size_max, [self.num_preview, 2]).tolist()
 
