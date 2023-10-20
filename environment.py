@@ -189,8 +189,8 @@ class Floor1(object):
 
         # next block: (height, width)
         if self.use_discrete_block:
-            self.block_que = 0.9 * np.random.choice([0.2, 0.3, 0.4, 0.5], [self.num_preview, 2], True,\
-                                                    p=[0.4, 0.3, 0.2, 0.1]).tolist()
+            self.block_que = (0.9 * np.random.choice([0.2, 0.3, 0.4, 0.5], [self.num_preview, 2], True,\
+                                                    p=[0.4, 0.3, 0.2, 0.1])).tolist()
         else:
             self.block_que = np.random.uniform(self.block_size_min, self.block_size_max, [self.num_preview, 2]).tolist()
 
