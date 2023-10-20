@@ -336,7 +336,7 @@ if __name__=='__main__':
     parser.add_argument("--lr", default=1e-4, type=float)
     parser.add_argument("--bs", default=128, type=int)
     parser.add_argument("--buff_size", default=1e4, type=float)
-    parser.add_argument("--total_episodes", default=1e5, type=float)
+    parser.add_argument("--total_episodes", default=2e5, type=float)
     parser.add_argument("--learn_start", default=3e3, type=float)
     parser.add_argument("--update_freq", default=250, type=int)
     parser.add_argument("--log_freq", default=250, type=int)
