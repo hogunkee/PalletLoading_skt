@@ -98,8 +98,8 @@ class RulebasePalletLoader:
     def get_action(self, obs):
         image_obs, block_size = obs
         block_pixel_dim = (
-            math.ceil(block_size[0] * self.obs_resolution),
-            math.ceil(block_size[1] * self.obs_resolution),
+            math.ceil((block_size[0] / 0.9 - 1e-3) * self.obs_resolution),
+            math.ceil((block_size[1] / 0.9 - 1e-3) * self.obs_resolution),
         )
         # print("block size:", block_size)
         while True:
@@ -122,7 +122,7 @@ class RulebasePalletLoader:
 
 if __name__ == "__main__":
     box_norm = True
-    resolution = 10
+    resolution = 100
     env = Floor1(
         resolution=resolution,
         box_norm=box_norm,
@@ -133,7 +133,7 @@ if __name__ == "__main__":
     predictor = RulebasePalletLoader(resolution)
 
     total_reward = 0.0
-    num_episodes = 1000
+    num_episodes = 10000
     for ep in range(num_episodes):
         obs = env.reset()
         predictor.reset()
