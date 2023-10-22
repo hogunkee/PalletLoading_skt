@@ -34,19 +34,36 @@ class RulebasePalletLoader:
             return False
         # TODO:
 
-    def check_if_block_fit_after_curr_tail_j(self, block_dimension_in_pixel):
+    def check_if_block_fit_after_curr_tail_j(self, image_obs, block_dimension_in_pixel):
         block_pixel_width, block_pixel_height = block_dimension_in_pixel
-        rotations = [0, 1]
+        if block_pixel_width <= block_pixel_height:
+            rotations = [0, 1]
+        else:
+            rotations = [1, 0]
 
         for rotation in rotations:
             if not rotation:
                 block_pixel_width, block_pixel_height = block_dimension_in_pixel
             else:
                 block_pixel_height, block_pixel_width = block_dimension_in_pixel
-            # lowered = 0
             if self.curr_tail_j > self.obs_resolution - block_pixel_height:
                 continue
-            lowered = 0  # TODO:
+            lowered = 0
+            # move block to -i direction if possible
+            for i_lowered in range(block_pixel_height):
+                d_i = i_lowered + 1
+                if self.prev_head_i - d_i < 0:
+                    break
+                collision = False
+                for d_j in range(block_pixel_height):
+                    if image_obs[self.prev_head_i - d_i][self.curr_tail_j + d_j] == 1:
+                        collision = True
+                        break
+
+                if collision:
+                    break
+                lowered += 1
+
             if self.prev_head_i - lowered + block_pixel_width > self.obs_resolution:
                 continue
 
@@ -107,7 +124,9 @@ class RulebasePalletLoader:
             # if action != None:
             #     break
 
-            action = self.check_if_block_fit_after_curr_tail_j(block_pixel_dim)
+            action = self.check_if_block_fit_after_curr_tail_j(
+                image_obs, block_pixel_dim
+            )
             # print("after curr tail:", action)
             if action != None:
                 break
@@ -140,7 +159,6 @@ if __name__ == "__main__":
         ep_reward = 0.0
         # print(f'Episode {ep} starts.')
         for i in range(100):
-            # print(obs[0])
             action = predictor.get_action(obs)
             obs, reward, end = env.step(action)
             ep_reward += reward
