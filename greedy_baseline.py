@@ -10,10 +10,8 @@ class RulebasePallasdfetLoader:
         self.margin_ratio = margin_ratio
 
     def greedy_search(self, image_obs, block_size):
-        # print(image_obs)
         block_res_width = math.ceil(block_size[0] * self.obs_resolution)
         block_res_height = math.ceil(block_size[1] * self.obs_resolution)
-        # print("block res", block_res_width, block_res_height)
         for elem in range(self.obs_resolution * self.obs_resolution):
             obs_i = elem // self.obs_resolution
             obs_j = elem % self.obs_resolution
@@ -27,28 +25,21 @@ class RulebasePallasdfetLoader:
                 block_out_of_index = True
 
             if block_out_of_index:
-                # print("OoB", obs_i, obs_j)
                 continue
             # check collision
             block_collision = False
             for block_pix in range(block_res_width * block_res_height):
-                d_i = (
-                    block_pix // block_res_height
-                )  # Integer division to get the current row
-                d_j = block_pix % block_res_height  # Modulus to get the current column
+                d_i = block_pix // block_res_height
+                d_j = block_pix % block_res_height
                 if image_obs[obs_i + d_i][obs_j + d_j] == 1:
                     block_collision = True
-                    # print("COLLS", obs_i + d_i, obs_j + d_j)
                     break
             if not block_collision:
                 # found valid action!
-                # print("action found:", obs_i, obs_j)
                 action_i = (obs_i + 0.5 * block_res_width) / self.obs_resolution
                 action_j = (obs_j + 0.5 * block_res_height) / self.obs_resolution
-                # print("\t\treturn:", action_i, action_j)
                 return [action_i, action_j]
 
-        # print("action not found")
         return None
 
     def rotate_block(self, block_size):
@@ -78,7 +69,6 @@ if __name__ == "__main__":
         render=False,
         discrete_block=True,
     )
-    # state, next_block = env.reset()
     predictor = RulebasePallasdfetLoader(resolution)
 
     total_reward = 0.0

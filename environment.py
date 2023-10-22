@@ -292,6 +292,7 @@ class Floor1(object):
         return obs, reward, episode_end
 
 if __name__=='__main__':
+    import random
     box_norm = True
     action_norm = True
     env = Floor1(resolution=32, box_norm=box_norm, action_norm=action_norm, render=False, block_size_min=0.1, block_size_max=0.25)
@@ -304,12 +305,13 @@ if __name__=='__main__':
         ep_reward = 0.
         # print(f'Episode {ep} starts.')
         for i in range(100):
+            action_rot = random.choice([0, 1])
             if action_norm:
                 random_action = np.random.uniform(0.1, 0.9, 2)
-                action = random_action.tolist()
+                action = [action_rot] + random_action.tolist()
             else:
                 random_action = np.random.uniform(0.1, 0.9, 2) * env.resolution
-                action = np.round(random_action).astype(int).tolist()
+                action = [action_rot] + np.round(random_action).astype(int).tolist()
             # print('action:', action)
             # state, next_block, reward, end = env.step(action)
             obs, reward, end = env.step(action)
