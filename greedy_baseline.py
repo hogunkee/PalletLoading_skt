@@ -5,12 +5,11 @@ from environment import Floor1
 
 
 class GreedyPolicyPalletLoader:
-    def __init__(self, obs_resolution, margin_ratio=0.05):
+    def __init__(self, obs_resolution):
         self.obs_resolution = obs_resolution
-        self.margin_ratio = margin_ratio
 
     def check_if_block_fits(self, image_obs, pos_index, block_dimension_in_pixel):
-        # Time complexity of this method can be reduced to O(1) from current O(n^2) using memory!
+        # Time complexity of this method can be reduced to O(1) from current O(n^2) using memory (if min width of the box is set)!
         # Return true if give block fits in given position(index) of the pallet
 
         # position index of intrerest in observation
