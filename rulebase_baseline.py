@@ -3,60 +3,121 @@ import math
 import numpy as np
 from environment import Floor1
 
+"""
+Ruebase algorithm for pallet packing.
 
-class RulebasePallasdfetLoader:
-    def __init__(self, obs_resolution, margin_ratio=0.05):
+"""
+
+
+class RulebasePalletLoader:
+    def __init__(self, obs_resolution):
         self.obs_resolution = obs_resolution
-        self.margin_ratio = margin_ratio
 
-    def greedy_search(self, image_obs, block_size):
-        block_res_width = math.ceil(block_size[0] * self.obs_resolution)
-        block_res_height = math.ceil(block_size[1] * self.obs_resolution)
-        for elem in range(self.obs_resolution * self.obs_resolution):
-            obs_i = elem // self.obs_resolution
-            obs_j = elem % self.obs_resolution
+    def reset(self):
+        self.prev_head_i = 0
+        self.prev_tail_j = -1
+        self.curr_head_i = 0
+        self.curr_tail_j = 0
 
-            # check out of bound
-            block_out_of_index = False
-            if (
-                obs_i + block_res_width > self.obs_resolution
-                or obs_j + block_res_height > self.obs_resolution
-            ):
-                block_out_of_index = True
+    def get_action_from_pos(self, pos_i, pos_j, block_pixel_width, block_pixel_height):
+        # print(pos_i, pos_j, block_pixel_width, block_pixel_height)
+        return (
+            (pos_i + 0.5 * block_pixel_width) / self.obs_resolution,
+            (pos_j + 0.5 * block_pixel_height) / self.obs_resolution,
+        )
 
-            if block_out_of_index:
+    def check_if_block_fit_after_prev_tail_j(self, block_dimension_in_pixel):
+        block_pixel_width, block_pixel_height = block_dimension_in_pixel
+        if self.prev_tail_j < 0:
+            return False
+        if self.prev_tail_j > self.obs_resolution - block_pixel_height:
+            return False
+        # TODO:
+
+    def check_if_block_fit_after_curr_tail_j(self, block_dimension_in_pixel):
+        block_pixel_width, block_pixel_height = block_dimension_in_pixel
+        rotations = [0, 1]
+
+        for rotation in rotations:
+            if not rotation:
+                block_pixel_width, block_pixel_height = block_dimension_in_pixel
+            else:
+                block_pixel_height, block_pixel_width = block_dimension_in_pixel
+            # lowered = 0
+            if self.curr_tail_j > self.obs_resolution - block_pixel_height:
                 continue
-            # check collision
-            block_collision = False
-            for block_pix in range(block_res_width * block_res_height):
-                d_i = block_pix // block_res_height
-                d_j = block_pix % block_res_height
-                if image_obs[obs_i + d_i][obs_j + d_j] == 1:
-                    block_collision = True
-                    break
-            if not block_collision:
-                # found valid action!
-                action_i = (obs_i + 0.5 * block_res_width) / self.obs_resolution
-                action_j = (obs_j + 0.5 * block_res_height) / self.obs_resolution
-                return [action_i, action_j]
+            lowered = 0  # TODO:
+            if self.prev_head_i - lowered + block_pixel_width > self.obs_resolution:
+                continue
+
+            self.curr_head_i = max(
+                self.curr_head_i, self.prev_head_i - lowered + block_pixel_width
+            )
+            action_i, action_j = self.get_action_from_pos(
+                self.prev_head_i - lowered,
+                self.curr_tail_j,
+                block_pixel_width,
+                block_pixel_height,
+            )
+            # print("action_i, action_j", action_i, action_j)
+            self.curr_tail_j = self.curr_tail_j + block_pixel_height
+            return [rotation, action_i, action_j]
 
         return None
 
-    def rotate_block(self, block_size):
-        rotated_block = [block_size[1], block_size[0]]
-        return rotated_block
+    def update_head_n_tail(self, block_dimension_in_pixel):
+        # returns False if block cant' be fit into pallet
+        ########## 1. Check if more block can't be fit into pallet ##########
+        block_pixel_width, block_pixel_height = block_dimension_in_pixel
+        if self.curr_head_i > self.obs_resolution:
+            raise Exception("curr_head_i > obs res")
+        # TODO: check if curr_tail_j can be moved back
+        if (
+            self.curr_tail_j <= self.obs_resolution - block_pixel_height
+            and self.curr_tail_j <= self.obs_resolution - block_pixel_width
+        ):
+            lowered = 0  # TODO:
+            if (
+                self.prev_head_i - lowered + block_pixel_width > self.obs_resolution
+                and self.prev_head_i - lowered + block_pixel_height
+                > self.obs_resolution
+            ):
+                return False
+        # return False
+        ########## 2. Load next row(block can't fit after curr_tail_j) ##########
+        if self.curr_head_i == self.obs_resolution:
+            return False
+        self.prev_tail_j = self.curr_tail_j
+        self.prev_head_i = self.curr_head_i
+        self.curr_tail_j = 0
+        # print("box: ", block_dimension_in_pixel)
+        # print("prev curr tail_j", self.prev_tail_j, self.curr_tail_j)
+        # print("prev curr head_i", self.prev_head_i, self.curr_head_i)
+        return True
 
-    def get_greedy_action(self, obs):
+    def get_action(self, obs):
         image_obs, block_size = obs
-        action_pos = self.greedy_search(image_obs, block_size)
-        action_rot = [0]
-        if action_pos == None:
-            action_pos = self.greedy_search(image_obs, self.rotate_block(block_size))
-            action_rot = [1]
+        block_pixel_dim = (
+            math.ceil(block_size[0] * self.obs_resolution),
+            math.ceil(block_size[1] * self.obs_resolution),
+        )
+        # print("block size:", block_size)
+        while True:
+            # action = self.check_if_block_fit_after_prev_tail_j()
+            # if action != None:
+            #     break
 
-        if action_pos == None:
-            return [0, 0, 0]
-        return action_rot + action_pos
+            action = self.check_if_block_fit_after_curr_tail_j(block_pixel_dim)
+            # print("after curr tail:", action)
+            if action != None:
+                break
+
+            if not self.update_head_n_tail(block_pixel_dim):
+                # print("end ep")
+                action = [0, 0, 0]
+                break
+
+        return action
 
 
 if __name__ == "__main__":
@@ -69,16 +130,18 @@ if __name__ == "__main__":
         render=False,
         discrete_block=True,
     )
-    predictor = RulebasePallasdfetLoader(resolution)
+    predictor = RulebasePalletLoader(resolution)
 
     total_reward = 0.0
-    num_episodes = 100
+    num_episodes = 1000
     for ep in range(num_episodes):
         obs = env.reset()
+        predictor.reset()
         ep_reward = 0.0
         # print(f'Episode {ep} starts.')
         for i in range(100):
-            action = predictor.get_greedy_action(obs)
+            # print(obs[0])
+            action = predictor.get_action(obs)
             obs, reward, end = env.step(action)
             ep_reward += reward
             if end:
