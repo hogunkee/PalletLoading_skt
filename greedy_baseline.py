@@ -60,7 +60,11 @@ class GreedyPolicyPalletLoader:
 
     def get_action(self, obs):
         image_obs, block_size = obs
-        action = self.greedy_search(image_obs, block_size)
+        block_size_with_margin = (
+            block_size[0] / 0.9 - 1e-3,
+            block_size[1] / 0.9 - 1e-3,
+        )
+        action = self.greedy_search(image_obs, block_size_with_margin)
         if action == None:
             return [0, 0, 0]
         return action
@@ -68,7 +72,7 @@ class GreedyPolicyPalletLoader:
 
 if __name__ == "__main__":
     box_norm = True
-    resolution = 10
+    resolution = 100
     env = Floor1(
         resolution=resolution,
         box_norm=box_norm,
@@ -79,12 +83,13 @@ if __name__ == "__main__":
     predictor = GreedyPolicyPalletLoader(resolution)
 
     total_reward = 0.0
-    num_episodes = 1000
+    num_episodes = 100
     for ep in range(num_episodes):
         obs = env.reset()
         ep_reward = 0.0
         # print(f'Episode {ep} starts.')
         for i in range(100):
+            # print(obs)
             action = predictor.get_action(obs)
             obs, reward, end = env.step(action)
             ep_reward += reward
