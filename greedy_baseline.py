@@ -58,7 +58,7 @@ class GreedyPolicyPalletLoader:
         rotated_block = [block_size[1], block_size[0]]
         return rotated_block
 
-    def get_greedy_action(self, obs):
+    def get_action(self, obs):
         image_obs, block_size = obs
         action = self.greedy_search(image_obs, block_size)
         if action == None:
@@ -85,7 +85,7 @@ if __name__ == "__main__":
         ep_reward = 0.0
         # print(f'Episode {ep} starts.')
         for i in range(100):
-            action = predictor.get_greedy_action(obs)
+            action = predictor.get_action(obs)
             obs, reward, end = env.step(action)
             ep_reward += reward
             if end:
