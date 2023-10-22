@@ -72,7 +72,7 @@ class GreedyPolicyPalletLoader:
 
 if __name__ == "__main__":
     box_norm = True
-    resolution = 100
+    resolution = 64
     env = Floor1(
         resolution=resolution,
         box_norm=box_norm,
@@ -83,7 +83,7 @@ if __name__ == "__main__":
     predictor = GreedyPolicyPalletLoader(resolution)
 
     total_reward = 0.0
-    num_episodes = 100
+    num_episodes = 1000
     for ep in range(num_episodes):
         obs = env.reset()
         ep_reward = 0.0
