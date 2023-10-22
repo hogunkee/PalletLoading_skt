@@ -4,7 +4,7 @@ import numpy as np
 from environment import Floor1
 
 
-class RulebasePallasdfetLoader:
+class GreedyPolicyPalletLoader:
     def __init__(self, obs_resolution, margin_ratio=0.05):
         self.obs_resolution = obs_resolution
         self.margin_ratio = margin_ratio
@@ -77,7 +77,7 @@ if __name__ == "__main__":
         render=False,
         discrete_block=True,
     )
-    predictor = RulebasePallasdfetLoader(resolution)
+    predictor = GreedyPolicyPalletLoader(resolution)
 
     total_reward = 0.0
     num_episodes = 1000
