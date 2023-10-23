@@ -77,7 +77,8 @@ class RulebasePalletLoader:
                 block_pixel_height,
             )
             # print("action_i, action_j", action_i, action_j)
-            self.curr_tail_j = self.curr_tail_j + block_pixel_height
+            if block_pixel_width > lowered:
+                self.curr_tail_j = self.curr_tail_j + block_pixel_height
             return [rotation, action_i, action_j]
 
         return None
