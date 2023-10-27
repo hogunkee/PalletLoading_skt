@@ -435,9 +435,9 @@ if __name__=='__main__':
     else:
         n_hidden = 16
     if small:
-        from fcn_resnet import FCQResNetSmall as FCQNet
+        from models import FCQResNetSmall as FCQNet
     else:
-        from fcn_resnet import FCQResNet as FCQNet
+        from models import FCQResNet as FCQNet
 
     if evaluation:
         evaluate(env=env, model_path=model_path, num_trials=num_trials, b1=b1, b2=b2, 

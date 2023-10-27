@@ -67,6 +67,7 @@ def evaluate(env, model_path='', num_trials=10, b1=0.1, b2=0.1, show_q=False, n_
 
     log_returns = []
     log_eplen = []
+    log_pf = []
 
     pre_action = None
 
@@ -98,14 +99,17 @@ def evaluate(env, model_path='', num_trials=10, b1=0.1, b2=0.1, show_q=False, n_
                 block = next_block
                 pre_action = action
 
+        packing_factor = state.sum() / np.ones_like(state).sum()
         log_returns.append(episode_reward)
         log_eplen.append(ep_len)
+        log_pf.append(packing_factor)
 
         print("EP{}".format(ne+1), end=" / ")
         print("reward:{0:.2f}".format(log_returns[-1]), end=" / ")
         print("eplen:{0:.1f}".format(log_eplen[-1]), end=" / ")
         print("mean reward:{0:.1f}".format(np.mean(log_returns)), end=" / ")
-        print("mean eplen:{0:.1f}".format(np.mean(log_eplen)))
+        print("mean eplen:{0:.1f}".format(np.mean(log_eplen)), end=" / ")
+        print("mean packing factor:{0:.3f}".format(np.mean(log_pf)))
 
     print()
     print("="*80)
@@ -432,9 +436,9 @@ if __name__=='__main__':
     else:
         n_hidden = 16
     if small:
-        from fcn_resnet import FCQResNetSmall as FCQNet
+        from models import FCQResNetSmall as FCQNet
     else:
-        from fcn_resnet import FCQResNet as FCQNet
+        from models import FCQResNet as FCQNet
 
     if evaluation:
         evaluate(env=env, model_path=model_path, num_trials=num_trials, b1=b1, b2=b2, 
