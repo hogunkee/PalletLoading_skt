@@ -80,27 +80,23 @@ Main
 
 class StabilityChecker():
     def __init__(self, box_height, max_level=5):
-        super(StabilityChecker, self).__init__()
+
+        #self.simulation_app = SimulationApp(config)
 
         # set the simulation
         self.sim = SimulationContext(physics_dt=0.01, rendering_dt=0.01, backend="torch", device="cpu")
+        #self.sim = SimulationContext(physics_dt=0.01, rendering_dt=0.01, backend="torch", device="cuda:0")
         set_camera_view(eye=[1.5, 1.5, 1.5], target=[0.0, 0.0, 0.0])
         design_scene()
 
-        self.spawn_interval, self.spawn_offset_z = 30, 0.03
+        self.spawn_interval, self.spawn_offset_z = 10, 0.01
         self.box_height, self.max_level = box_height, max_level
 
         # add boxes
         self.pallet_usd_path = f"{ISAAC_NUCLEUS_DIR}/Props/Pallet/pallet.usd"
-        #self.box_usd_path = f"{ISAAC_NUCLEUS_DIR}/Props/Blocks/nvidia_cube.usd"
-        #self.box_default_scale = [0.2, 0.2, 0.2]
         self.box_usd_path = "/home/minjae/Desktop/data/Cardbox_A2_m.usd"
-        #self.box_usd_path = "omniverse://localhost/NVIDIA/Assets/ArchVis/Industrial/Containers/Cardboard/Cardboard_A2.usd"
-         # /NVIDIA/Assets/ArchVis/Industrial/Containers/Cardboard/Textures/T_Cardbox_A2_
+        #self.box_usd_path = "./environment/sim_objects/Cardbox_A2_m.usd"
         self.box_default_scale = [1.0, 1.0, 1.0]
-
-        # cfg = RigidObjectCfg()
-        # self.rigid_object = RigidObject(cfg)
 
         # initialize the simulator
         self.n_boxes = 0
@@ -187,11 +183,11 @@ class StabilityChecker():
                                position=pose,
                                orientation=quat,
                                scale=scale)
-        if self.n_boxes == 0:
-            cache = create_bbox_cache(use_extents_hint=False)
-            boundbox = compute_aabb(cache, "/World/Objects/Box0", include_children=True)
-            box_height = boundbox[5] - boundbox[2]
-            self.set_box_height(box_height)
+        # if self.n_boxes == 0:
+        #     cache = create_bbox_cache(use_extents_hint=False)
+        #     boundbox = compute_aabb(cache, "/World/Objects/Box0", include_children=True)
+        #     box_height = boundbox[5] - boundbox[2]
+        #     self.set_box_height(box_height)
 
         self.n_boxes += 1
     
@@ -210,7 +206,7 @@ class StabilityChecker():
         # Define simulation stepping
         sim_dt = self.sim.get_physics_dt()
         sim_time, count = 0.0, 0
-        max_count = n_boxes * self.spawn_interval + 150
+        max_count = n_boxes * self.spawn_interval + 50
 
         self.reset_sim()
         box_idx = 0
@@ -254,11 +250,11 @@ def main():
     render = True
 
     # stable case
-    pose_ex1 = [0.00, 0.00, 1.0*box_height-0.5*box_height]
-    pose_ex2 = [0.50, 0.00, 1.0*box_height-0.5*box_height]
-    pose_ex3 = [0.25, 0.00, 2.0*box_height-0.5*box_height]
-    pose_ex4 = [0.45, 0.00, 3.0*box_height-0.5*box_height]
-    pose_ex5 = [0.05, 0.00, 3.0*box_height-0.5*box_height]
+    pose_ex1 = [0.00, 0.00, 0.0*box_height+0.00] #-0.8*box_height]
+    pose_ex2 = [0.50, 0.00, 0.0*box_height+0.00] #-0.8*box_height]
+    pose_ex3 = [0.25, 0.00, 1.0*box_height+0.00] #-0.8*box_height]
+    pose_ex4 = [0.45, 0.00, 2.0*box_height+0.00] #-0.8*box_height]
+    pose_ex5 = [0.05, 0.00, 2.0*box_height+0.00] #-0.8*box_height]
     pose_ex = [pose_ex1, pose_ex2, pose_ex3, pose_ex4, pose_ex5]
 
     quat_0 = [0.0, 0.0, 0.0, 1.0]

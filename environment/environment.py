@@ -5,7 +5,6 @@ import matplotlib
 matplotlib.use('TkAgg')
 from matplotlib import pyplot as plt
 
-from environment.sim_app import StabilityChecker
 
 
 class Renderer():
@@ -205,7 +204,7 @@ class RewardFunc():
 
         stability_ = self.stability_sim.stacking(pose_list, quat_list, scale_list,
                                                  render=self.sim_render)
-
+        
         if not stability_:
             reward, episode_end = 0.0, True # 0.0, True
         else:
@@ -459,10 +458,13 @@ class FloorN(PalletLoadingSim):
 
         assert max_levels >= 2
 
+        from environment.sim_app import StabilityChecker
         stability_checker = StabilityChecker(box_height=self.box_height+6e-3, max_level=5)
+        
         self.reward_fuc = RewardFunc(reward_type,
                                      stability_sim=stability_checker,
-                                     max_levels=max_levels)
+                                     max_levels=max_levels,
+                                     sim_render=render)
 
         self.stacked_history = {
             "pose_list": [],
@@ -520,7 +522,7 @@ class FloorN(PalletLoadingSim):
             self.renderer.render_current_state(self.state, next_blocks, previous_state,
                                                box=next_block_bound)
 
-        pose_ = [cy/self.resolution, cx/self.resolution, (box_level-0.5)*self.box_height]
+        pose_ = [cy/self.resolution, cx/self.resolution, (box_level-1)*self.box_height+0.01]
         scale_ = [self.next_block[0], self.next_block[1], self.box_height]
 
         self.stacked_history["pose_list"].append(pose_)
