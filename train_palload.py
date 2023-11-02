@@ -10,7 +10,6 @@ import torch
 import torch.nn as nn
 from utils import *
 from replay_buffer import ReplayBuffer
-from environment.environment import Floor1, FloorN
 
 
 import warnings
@@ -366,10 +365,10 @@ if __name__=='__main__':
     args = parser.parse_args()
 
     # env configuration #
-    render = False # True # args.render
+    render = args.render
     b1 = args.b1
     b2 = args.b2
-    discrete_block = True # args.discrete
+    discrete_block = args.discrete
     max_steps = args.max_steps
     resolution = args.resolution
     reward_type = args.reward
@@ -410,7 +409,12 @@ if __name__=='__main__':
         wandb.config.update(args)
         wandb.run.save()
 
-    env = FloorN(
+    if max_levels == 1:
+        from environment.environment import Floor1 as FloorEnv
+    else:
+        from environment.environment import FloorN as FloorEnv
+
+    env = FloorEnv(
         resolution=resolution, 
         num_steps=max_steps,
         num_preview=5,
@@ -433,7 +437,7 @@ if __name__=='__main__':
     learn_start = int(args.learn_start)
     update_freq = args.update_freq
     log_freq = args.log_freq
-    double = True # args.double
+    double = args.double
     augmentation = args.augmentation
 
     half = args.half

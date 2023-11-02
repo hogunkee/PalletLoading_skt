@@ -158,14 +158,13 @@ class RewardFunc():
             out_of_range = True
 
         # check collision #
-        box_placed = np.zeros(np.shape(state))
-        #box_placed[min_y: max_y, min_x: max_x] = 1       
+        box_placed = np.zeros(np.shape(state))    
         box_placed[max(min_y,0): max_y, max(min_x,0): max_x] = 1 
         next_state = state + box_placed
 
         collision = False
-        #if len(np.where(next_state>=self.max_levels)[0]) > 0:
-        #    collision = True            
+        if len(np.where(next_state>self.max_levels)[0]) > 0:
+           collision = True            
         
         reward = 0.0
         episode_end = False
@@ -194,14 +193,14 @@ class RewardFunc():
         return reward, episode_end
 
     def get_3d_reward(self, state, block_bound, stacked_history, level_map, box_level):
-        pose_list = stacked_history["pose_list"]
-        quat_list = stacked_history["quat_list"]
-        scale_list = stacked_history["scale_list"]
-
         if np.max(level_map) > self.max_levels:
             reward, episode_end = 0.0, True # 0.0, True
             return reward, episode_end
 
+        pose_list = stacked_history["pose_list"]
+        quat_list = stacked_history["quat_list"]
+        scale_list = stacked_history["scale_list"]
+        
         stability_ = self.stability_sim.stacking(pose_list, quat_list, scale_list,
                                                  render=self.sim_render)
         
@@ -405,7 +404,9 @@ class Floor1(PalletLoadingSim):
         box_placed = np.zeros(np.shape(self.state))
         box_placed[max(min_y,0): max_y, max(min_x,0): max_x] = 1   
         self.state = self.state + box_placed
-        self.level_map = self.level_map + np.array(box_placed, dtype=np.uint8)
+
+        box_level = np.max(self.level_map[max(min_y,0):max_y,max(min_x,0):max_x]) + 1
+        self.level_map[max(min_y,0):max_y,max(min_x,0):max_x] = box_level
 
         if self.render:
             next_blocks = self.block_que
@@ -460,7 +461,7 @@ class FloorN(PalletLoadingSim):
 
         from environment.sim_app import StabilityChecker
         stability_checker = StabilityChecker(box_height=self.box_height+6e-3, max_level=5)
-        
+
         self.reward_fuc = RewardFunc(reward_type,
                                      stability_sim=stability_checker,
                                      max_levels=max_levels,
@@ -509,7 +510,6 @@ class FloorN(PalletLoadingSim):
         box_placed = np.zeros(np.shape(self.state[0]))
         box_placed[max(min_y,0): max_y, max(min_x,0): max_x] = 1
 
-        #self.level_map = self.level_map + np.array(box_placed, dtype=np.uint8)
         box_level = np.max(self.level_map[max(min_y,0):max_y,max(min_x,0):max_x]) + 1
         self.level_map[max(min_y,0):max_y,max(min_x,0):max_x] = box_level
         assert box_level >= 1

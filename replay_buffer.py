@@ -9,9 +9,9 @@ class ReplayBuffer(object):
         self.size = 0
         self.dim_action = dim_action
 
-        self.state = np.zeros([max_size] + list(state_dim))
+        self.state = np.zeros([max_size] + list(state_dim), dtype=np.uint8)
         self.block = np.zeros((max_size, block_dim))
-        self.next_state = np.zeros([max_size] + list(state_dim))
+        self.next_state = np.zeros([max_size] + list(state_dim), dtype=np.uint8)
         self.next_block = np.zeros((max_size, block_dim))
         self.action = np.zeros((max_size, dim_action))
         self.reward = np.zeros((max_size, dim_reward))
@@ -20,9 +20,9 @@ class ReplayBuffer(object):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def add(self, state, block, action, next_state, next_block, reward, done):
-        self.state[self.ptr] = state
+        self.state[self.ptr] = np.array(state, dtype=np.uint8)
         self.block[self.ptr] = block 
-        self.next_state[self.ptr] = next_state
+        self.next_state[self.ptr] = np.array(next_state, dtype=np.uint8)
         self.next_block[self.ptr] = next_block 
         self.action[self.ptr] = action
         self.reward[self.ptr] = reward

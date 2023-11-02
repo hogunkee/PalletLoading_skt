@@ -26,6 +26,7 @@ simulation_app = SimulationApp(config)
 """Rest everything follows."""
 
 import scipy.spatial.transform as tf
+import os
 import torch
 import time
 import math
@@ -94,8 +95,8 @@ class StabilityChecker():
 
         # add boxes
         self.pallet_usd_path = f"{ISAAC_NUCLEUS_DIR}/Props/Pallet/pallet.usd"
-        self.box_usd_path = "/home/minjae/Desktop/data/Cardbox_A2_m.usd"
-        #self.box_usd_path = "./environment/sim_objects/Cardbox_A2_m.usd"
+        #self.box_usd_path = "/home/minjae/Desktop/data/Box0.usd"
+        self.box_usd_path = os.getcwd() + "/environment/sim_objects/Box0.usd"
         self.box_default_scale = [1.0, 1.0, 1.0]
 
         # initialize the simulator
