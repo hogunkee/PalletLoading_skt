@@ -281,7 +281,7 @@ class PalletLoadingSim(object):
         
         next_block = np.array(self.next_block)
         if self.box_norm:
-            next_block = np.array(self.next_block) * self.resolution
+            next_block = np.array(self.next_block)
         else:
             next_block = np.round(np.array(self.next_block) * self.resolution).astype(int)
             
