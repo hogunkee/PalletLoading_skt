@@ -37,7 +37,7 @@ from omni.isaac.core.utils.viewports import set_camera_view
 
 import omni.isaac.orbit.utils.kit as kit_utils
 from omni.isaac.orbit.objects.rigid import RigidObject, RigidObjectCfg
-from omni.isaac.orbit.utils.assets import ISAAC_NUCLEUS_DIR, ISAAC_ORBIT_NUCLEUS_DIR, NUCLEUS_DIR
+from omni.isaac.orbit.utils.assets import ISAAC_NUCLEUS_DIR, ISAAC_ORBIT_NUCLEUS_DIR
 from omni.isaac.orbit.utils.math import convert_quat, quat_mul, random_yaw_orientation, sample_cylinder
 from omni.isaac.core.prims import XFormPrim
 from omni.isaac.core.utils.bounds import compute_aabb, create_bbox_cache
