@@ -63,8 +63,8 @@ class GreedyGroundFloorPolicy:
         #     block_size[1] + self.margin_ratio * 2 - 1e-3,
         # )
         block_size_with_margin = (
-            block_size[0] / 0.9,
-            block_size[1] / 0.9,
+            block_size[0] / 0.9 + self.margin_ratio * 2,
+            block_size[1] / 0.9 + self.margin_ratio * 2
         )
         action = self.greedy_search(image_obs_1st_floor, block_size_with_margin)
         if action == None:
@@ -94,8 +94,6 @@ if __name__ == "__main__":
         obs = env.reset()
         state, block = obs
         # print("state:",state)
-        print("state[0]:",state[0])
-        print("block:", block)
         ep_reward = 0.0
         # print(f'Episode {ep} starts.')
         for i in range(100):
@@ -103,10 +101,13 @@ if __name__ == "__main__":
                 image_obs_1st_floor = state[0],
                 block_size = block
             )
+            print("state[0]:",state[0])
+            print("block:", block)
             print("action:", action)
-            obs, reward, end = env.step(action)
+            obs, reward, done = env.step(action)
+            state, block = obs
             ep_reward += reward
-            if end:
+            if done:
                 # print('Episode ends.')
                 break
         # print("    ep_reward: ", ep_reward)
