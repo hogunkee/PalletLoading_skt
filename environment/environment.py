@@ -372,7 +372,7 @@ class Floor1(PalletLoadingSim):
             action_pos = np.array(action[1:])
 
         if self.box_norm:
-            next_block = np.array(self.next_block)
+            next_block = np.array(self.next_block) * self.resolution
         else:
             next_block = np.round(np.array(self.next_block) * self.resolution).astype(int)
         
@@ -486,7 +486,7 @@ class FloorN(PalletLoadingSim):
             action_pos = np.array(action[1:])
 
         if self.box_norm:
-            next_block = np.array(self.next_block)
+            next_block = np.array(self.next_block) * self.resolution
         else:
             next_block = np.round(np.array(self.next_block) * self.resolution).astype(int)
         
