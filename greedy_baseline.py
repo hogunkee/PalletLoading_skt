@@ -2,12 +2,28 @@ from environment.environment import FloorN as FloorEnv
 import math
 import numpy as np
 
-class GreedyGroundFloorPolicy:
-    def __init__(self, obs_resolution, margin_ratio):
-        self.obs_resolution = obs_resolution
-        self.margin_ratio = margin_ratio
 
-    def check_if_block_fits(self, image_obs, pos_index, block_dimension_in_pixel):
+def rotate_block(block_size):
+    return [block_size[1], block_size[0]]
+
+
+class GreedyPolicyAgent:
+    def __init__(
+        self,
+        obs_resolution,
+        max_level,
+        norm_margin_padding=0.01,
+    ):
+        self.obs_resolution = obs_resolution
+        self.norm_margin_padding = norm_margin_padding
+        self.max_level = max_level
+
+    def reset(self):
+        pass
+
+    def check_placeability(
+        self, search_level, image_obs_3d, pos_index, block_dimension_in_pixel
+    ):
         # Time complexity of this method can be reduced to O(1) from current O(n^2) using memory (if min width of the box is set)!
         # Return true if give block fits in given position(index) of the pallet
 
@@ -21,52 +37,88 @@ class GreedyGroundFloorPolicy:
             or obs_j + block_pixel_height > self.obs_resolution
         ):
             return False
-        # check collision
+
         for block_pix in range(block_pixel_width * block_pixel_height):
             d_i = block_pix // block_pixel_height
             d_j = block_pix % block_pixel_height
-            if image_obs[obs_i + d_i][obs_j + d_j] == 1:
+            # check collision
+            if image_obs_3d[search_level][obs_i + d_i][obs_j + d_j] == 1:
                 return False
+            # check if gound is solid
+            if (
+                search_level != 0
+                and image_obs_3d[search_level - 1][obs_i + d_i][obs_j + d_j] == 0
+            ):
+                return False
+
         return True
 
-    def greedy_search(self, image_obs, block_size):
-        block_pixel_width = math.ceil(block_size[0] * self.obs_resolution)
-        block_pixel_height = math.ceil(block_size[1] * self.obs_resolution)
+    def get_action_from_pos(self, pos_idx, block_pixel_dim, rotation):
+        return [
+            rotation,
+            (pos_idx[0] + 0.5 * block_pixel_dim[0]) / self.obs_resolution,
+            (pos_idx[1] + 0.5 * block_pixel_dim[1]) / self.obs_resolution,
+        ]
+
+    def get_greedy_n_th_floor_action(
+        self, search_level, image_obs_3d, block_pixel_dim, block_pixel_dim_rot
+    ):
         for elem in range(self.obs_resolution * self.obs_resolution):
             pos_idx = (elem // self.obs_resolution, elem % self.obs_resolution)
-            block_pixel_dim = (block_pixel_width, block_pixel_height)
-            block_pixel_dim_rot = (block_pixel_height, block_pixel_width)
 
-            if self.check_if_block_fits(image_obs, pos_idx, block_pixel_dim):
-                # found valid action!
-                action_i = (pos_idx[0] + 0.5 * block_pixel_dim[0]) / self.obs_resolution
-                action_j = (pos_idx[1] + 0.5 * block_pixel_dim[1]) / self.obs_resolution
-                return [0, action_i, action_j]
-            elif self.check_if_block_fits(image_obs, pos_idx, block_pixel_dim_rot):
-                # found valid action!
-                action_i = (
-                    pos_idx[0] + 0.5 * block_pixel_dim_rot[0]
-                ) / self.obs_resolution
-                action_j = (
-                    pos_idx[1] + 0.5 * block_pixel_dim_rot[1]
-                ) / self.obs_resolution
-                return [1, action_i, action_j]
+            if self.check_placeability(
+                search_level, image_obs_3d, pos_idx, block_pixel_dim
+            ):
+                return self.get_action_from_pos(pos_idx, block_pixel_dim, 0)
+            elif self.check_placeability(
+                search_level, image_obs_3d, pos_idx, block_pixel_dim_rot
+            ):
+                return self.get_action_from_pos(pos_idx, block_pixel_dim_rot, 1)
         return None
 
-    def rotate_block(self, block_size):
-        rotated_block = [block_size[1], block_size[0]]
-        return rotated_block
+    def greedy_search(self, image_obs_3d, block_size):
+        block_pixel_width = math.ceil(block_size[0] * self.obs_resolution)
+        block_pixel_height = math.ceil(block_size[1] * self.obs_resolution)
+        block_pixel_dim = (block_pixel_width, block_pixel_height)
+        block_pixel_dim_rot = (block_pixel_height, block_pixel_width)
 
-    def get_action(self, image_obs_1st_floor, block_size):
-        # block_size_with_margin = (
-        #     block_size[0] + self.margin_ratio * 2 - 1e-3,
-        #     block_size[1] + self.margin_ratio * 2 - 1e-3,
-        # )
+        for search_level in range(self.max_level):
+            action = self.get_greedy_n_th_floor_action(
+                search_level, image_obs_3d, block_pixel_dim, block_pixel_dim_rot
+            )
+            if action != None:
+                print("state")
+                print(image_obs_3d[search_level])
+                if search_level != 0:
+                    print("prev state")
+                    print(image_obs_3d[search_level - 1])
+                print(
+                    "level:",
+                    search_level,
+                    "\taction:",
+                    action,
+                    "\tblock_size w margin:",
+                    block_size,
+                )
+                return action
+        return None
+
+    def get_action_with_margin(self, image_obs_3d, block_size, margin_ratio):
         block_size_with_margin = (
-            block_size[0] / 0.9 + self.margin_ratio * 2,
-            block_size[1] / 0.9 + self.margin_ratio * 2
+            block_size[0] / margin_ratio,
+            block_size[1] / margin_ratio,
         )
-        action = self.greedy_search(image_obs_1st_floor, block_size_with_margin)
+        action = self.greedy_search(image_obs_3d, block_size_with_margin)
+        if action == None:
+            return [0, 0, 0]
+        return action
+
+    def get_action(self, image_obs_3d, block_size):
+        action = self.get_action_with_margin(image_obs_3d, block_size, 0.9)
+        # if action == None:
+        #     action = self.get_action_with_margin(image_obs_3d, block_size, 1.0)
+        if action == None:
+            action = self.get_action_with_margin(image_obs_3d, block_size, 1.0)
         if action == None:
             return [0, 0, 0]
         return action
@@ -74,19 +126,23 @@ class GreedyGroundFloorPolicy:
 
 if __name__ == "__main__":
     resolution = 20
+    max_level = 5
     reward_type = "dense"
     env = FloorEnv(
         resolution=resolution,
         num_preview=5,
         box_norm=True,
         action_norm=True,
-        render=False,
+        render=True,
         discrete_block=True,
-        max_levels=5,
+        max_levels=max_level,
         reward_type="binary",
         # reward_type=reward_type,
     )
-    predictor = GreedyGroundFloorPolicy(resolution, margin_ratio=0.01)
+    # predictor = GreedyGroundFloorPolicy(resolution, margin_ratio=0.01)
+    predictor = GreedyPolicyAgent(
+        resolution, max_level=max_level, norm_margin_padding=0.01
+    )
 
     total_reward = 0.0
     num_episodes = 1
@@ -97,14 +153,12 @@ if __name__ == "__main__":
         ep_reward = 0.0
         # print(f'Episode {ep} starts.')
         for i in range(100):
-            action = predictor.get_action(
-                image_obs_1st_floor = state[0],
-                block_size = block
-            )
-            print("state[0]:",state[0])
+            action = predictor.get_action(image_obs_3d=state, block_size=block)
+            # print("state[0]:", state[0])
             print("block:", block)
             print("action:", action)
             obs, reward, done = env.step(action)
+            print("done", done)
             state, block = obs
             ep_reward += reward
             if done:
@@ -112,5 +166,7 @@ if __name__ == "__main__":
                 break
         # print("    ep_reward: ", ep_reward)
         total_reward += ep_reward
+        if ep % 10 == 0:
+            print(ep + 1, "/", num_episodes, "avg_score:", total_reward / (ep + 1))
     avg_score = total_reward / num_episodes
     print("average score: ", avg_score)
