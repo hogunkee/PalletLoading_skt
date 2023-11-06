@@ -339,7 +339,7 @@ if __name__=='__main__':
     parser.add_argument("--b2", default=0.25, type=float)
     parser.add_argument("--discrete", action="store_true")
     parser.add_argument("--max_steps", default=50, type=int)
-    parser.add_argument("--resolution", default=20, type=int)
+    parser.add_argument("--resolution", default=10, type=int)
     parser.add_argument("--reward", default='dense', type=str)
     parser.add_argument("--max_levels", default=5, type=int)
     ## learning ##
@@ -449,10 +449,10 @@ if __name__=='__main__':
     else:
         n_hidden = 16
     if small:
-        from models import FCQResNetSmall as FCQNet
+        #from models import FCQResNetSmall as FCQNet
+        from models import BinNet as FCQNet
     else:
         from models import FCQResNet as FCQNet
-    # from models import BinNet as FCQNet
 
     if evaluation:
         evaluate(env=env, model_path=model_path, num_trials=num_trials, b1=b1, b2=b2, 

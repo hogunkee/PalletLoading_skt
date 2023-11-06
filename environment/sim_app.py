@@ -135,15 +135,19 @@ class StabilityChecker():
             level_list.append(current_level)
         return level_list
     
-    def arrange_stack_order(self, pose_list):
+    def arrange_stack_order(self, pose_list, last_action=False):
+        if last_action:
+            pose_list = pose_list[:-1]
         level_list = self.get_box_level(pose_list)
         # sort stack-order by level
         stack_order = []
         for l in range(self.max_level):
             for i, level in enumerate(level_list):
                 if l==level: stack_order.append(i)
-
         assert len(stack_order) == len(pose_list)
+
+        if last_action:
+            stack_order.append(len(stack_order))
         return stack_order
 
     def check_stability(self, input_list, output_list,
@@ -192,14 +196,15 @@ class StabilityChecker():
 
         self.n_boxes += 1
     
-    def stacking(self, position_list, quanterinon_list, scale_list=None, render=False):
+    def stacking(self, position_list, quanterinon_list, scale_list=None,
+                 render=False, stack_type="in_order"):
         n_boxes = len(position_list)
         assert len(position_list) == len(quanterinon_list)
         if scale_list is None:
             scale_list = [[1.0 for _ in range(3)] for _ in range(n_boxes)]
         assert len(position_list) == len(quanterinon_list) == len(scale_list)
 
-        stack_order = self.arrange_stack_order(position_list)
+        stack_order = self.arrange_stack_order(position_list, last_action=True)
         position_list = [position_list[i] for i in stack_order]
         quanterinon_list = [quanterinon_list[i] for i in stack_order]
         scale_list = [scale_list[i] for i in stack_order]
@@ -207,10 +212,27 @@ class StabilityChecker():
         # Define simulation stepping
         sim_dt = self.sim.get_physics_dt()
         sim_time, count = 0.0, 0
-        max_count = n_boxes * self.spawn_interval + 50
 
         self.reset_sim()
         box_idx = 0
+
+        if stack_type=="in_order":
+            max_count = n_boxes * self.spawn_interval + 50
+
+        elif stack_type=="at_once":
+            max_count = n_boxes + 50
+
+            for _ in range(n_boxes-1):
+                pose_ = [a+b for (a, b) in zip(
+                    position_list[box_idx], [0.0,0.0,self.spawn_offset_z]
+                )]
+                scale_ = [a*b for (a, b) in zip(
+                    self.box_default_scale, scale_list[box_idx]
+                )]
+                self.spawn_box(pose=pose_, 
+                               quat=quanterinon_list[box_idx],
+                               scale=scale_)
+                box_idx += 1
 
         # Simulate physics
         while simulation_app.is_running():
@@ -243,7 +265,7 @@ class StabilityChecker():
         box_inputs = [position_list, quanterinon_list]
         box_outputs = self.get_box_position()
         return self.check_stability(box_inputs, box_outputs)
-
+    
 
 def main():
     box_height = 0.156

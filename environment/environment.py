@@ -1,5 +1,6 @@
 import cv2
 import time
+import math
 import numpy as np
 import matplotlib
 matplotlib.use('TkAgg')
@@ -104,13 +105,15 @@ class Renderer():
             b = np.round(np.array(b) * self.resolution).astype(int)
             if len(b) > 2: b = b[:2]
             by, bx = b
-            min_y = np.round(cy - (by-1e-5)/2).astype(int)
-            min_x = np.round(cx - (bx-1e-5)/2).astype(int)
-            max_y = np.round(cy + (by-1e-5)/2).astype(int)
-            max_x = np.round(cx + (bx-1e-5)/2).astype(int)
+            # min_y = np.round(cy - (by-1e-5)/2).astype(int)
+            # min_x = np.round(cx - (bx-1e-5)/2).astype(int)
+            # max_y = np.round(cy + (by-1e-5)/2).astype(int)
+            # max_x = np.round(cx + (bx-1e-5)/2).astype(int)
+            min_y, max_y = math.floor(cy-by/2), math.floor(cy+by/2)
+            min_x, max_x = math.floor(cx-bx/2), math.floor(cx+bx/2)
 
             block_fig = np.ones_like(state_pad)
-            block_fig[min_y: max_y, min_x: max_x] = [0, 0, 0]
+            block_fig[max(min_y,0): max_y, max(min_x,0): max_x] = [0, 0, 0]
 
             if i==0:
                 self.plots[2].imshow(block_fig)
@@ -138,7 +141,7 @@ class RewardFunc():
         if pad_boundary:
             state = np.pad(state, (1,1), 'constant', constant_values=(1))
             
-        #kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (10, 10))
+        # kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (10, 10))
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
         dilated = cv2.dilate(state, kernel).astype(bool).astype(float)
 
@@ -164,7 +167,7 @@ class RewardFunc():
         next_state = state + box_placed
 
         collision = False
-        if len(np.where(next_state>self.max_levels)[0]) > 0:
+        if len(np.where(next_state > 1)[0]) > 0:
            collision = True            
         
         reward = 0.0
@@ -178,21 +181,16 @@ class RewardFunc():
             reward = 1.0
 
         elif self.reward_type=='dense':
-            C = 1/100
+            C = 1.0 #1/10 #1/100
             p_box = self.get_pad_from_scene(box_placed, False).sum()
             p_current = self.get_pad_from_scene(state).sum()
             p_next = self.get_pad_from_scene(next_state).sum()
             reward = C * (p_box + p_current - p_next)
 
-            # p_current = self.get_pad_from_scene(state)
-            # reward = 1.0 + 100.0*np.multiply(p_current,box_placed).sum()/np.ones(np.shape(state)).sum()
-
-        elif self.reward_type=='dense2':
-            C = 1/100
-            p_box = self.get_pad_from_scene(box_placed, False).sum()
-            p_current = self.get_pad_from_scene(state).sum()
-            p_next = self.get_pad_from_scene(next_state).sum()
-            reward = C * (p_box + p_current - p_next) + 0.2
+            # p_bound = self.get_pad_from_scene(np.zeros(np.shape(state)), True)
+            # p_current = self.get_pad_from_scene(state, False)
+            # reward = 0.5 * np.multiply(p_bound, box_placed).sum() \
+            #     + np.multiply(p_current, box_placed).sum()
 
         return reward, episode_end
 
@@ -206,12 +204,13 @@ class RewardFunc():
         scale_list = stacked_history["scale_list"]
 
         stability_ = self.stability_sim.stacking(pose_list, quat_list, scale_list,
-                                                 render=self.sim_render)
+                                                 render=self.sim_render, stack_type="at_once")
         
         if not stability_:
             reward, episode_end = 0.0, True # 0.0, True
         else:
             reward, episode_end = self.get_2d_reward(state[box_level-1], block_bound)
+            if np.max(level_map) > box_level: reward = 0.0
 
         return reward, episode_end
 
@@ -399,10 +398,12 @@ class Floor1(PalletLoadingSim):
         self.stacked_history["quat_list"].append(quat_)
         self.stacked_history["scale_list"].append(scale_)
 
-        min_y = np.round(cy - (by-1e-5)/2).astype(int)
-        min_x = np.round(cx - (bx-1e-5)/2).astype(int)
-        max_y = np.round(cy + (by-1e-5)/2).astype(int)
-        max_x = np.round(cx + (bx-1e-5)/2).astype(int)
+        # min_y = np.round(cy - (by-1e-5)/2).astype(int)
+        # min_x = np.round(cx - (bx-1e-5)/2).astype(int)
+        # max_y = np.round(cy + (by-1e-5)/2).astype(int)
+        # max_x = np.round(cx + (bx-1e-5)/2).astype(int)
+        min_y, max_y = math.floor(cy-by/2), math.floor(cy+by/2)
+        min_x, max_x = math.floor(cx-bx/2), math.floor(cx+bx/2)
         next_block_bound = [min_y, max_y, min_x, max_x]
 
         box_placed = np.zeros(np.shape(self.state))
@@ -495,7 +496,7 @@ class FloorN(PalletLoadingSim):
             next_block = np.round(np.array(self.next_block) * self.resolution).astype(int)
         
         action_rot = action[0]
-        cy, cx = action_pos
+        cy, cx = action_pos        
 
         if action_rot==0:
             by, bx, _ = next_block
@@ -504,11 +505,15 @@ class FloorN(PalletLoadingSim):
         elif action_rot==1:
             bx, by, _ = next_block
             quat_ = [0.7071, 0.0, 0.0, 0.7071]
+        by, bx = math.ceil(by), math.ceil(bx)
 
-        min_y = np.round(cy - (by-1e-5)/2).astype(int)
-        min_x = np.round(cx - (bx-1e-5)/2).astype(int)
-        max_y = np.round(cy + (by-1e-5)/2).astype(int)
-        max_x = np.round(cx + (bx-1e-5)/2).astype(int)
+        # min_y = np.round(cy - (by-1e-5)/2).astype(int)
+        # min_x = np.round(cx - (bx-1e-5)/2).astype(int)
+        # max_y = np.round(cy + (by-1e-5)/2).astype(int)
+        # max_x = np.round(cx + (bx-1e-5)/2).astype(int)
+        min_y, max_y = math.floor(cy-by/2), math.floor(cy+by/2)
+        min_x, max_x = math.floor(cx-bx/2), math.floor(cx+bx/2)
+
         next_block_bound = [min_y, max_y, min_x, max_x]
 
         box_placed = np.zeros(np.shape(self.state[0]))
@@ -525,8 +530,7 @@ class FloorN(PalletLoadingSim):
             next_blocks = self.block_que
             self.renderer.render_current_state(self.state, next_blocks, previous_state,
                                                box=next_block_bound)
-
-        pose_ = [cy/self.resolution, cx/self.resolution, (box_level-1)*self.box_height+0.01]
+        pose_ = [(min_y+max_y)/2/self.resolution, (min_x+max_x)/2/self.resolution, (box_level-1)*self.box_height+0.01]
         scale_ = [self.next_block[0], self.next_block[1], self.box_height]
 
         self.stacked_history["pose_list"].append(pose_)
