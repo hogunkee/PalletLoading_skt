@@ -109,14 +109,10 @@ class GreedyPolicyAgent:
             block_size[1] / margin_ratio,
         )
         action = self.greedy_search(image_obs_3d, block_size_with_margin)
-        if action == None:
-            return [0, 0, 0]
         return action
 
     def get_action(self, image_obs_3d, block_size):
         action = self.get_action_with_margin(image_obs_3d, block_size, 0.9)
-        # if action == None:
-        #     action = self.get_action_with_margin(image_obs_3d, block_size, 1.0)
         if action == None:
             action = self.get_action_with_margin(image_obs_3d, block_size, 1.0)
         if action == None:
