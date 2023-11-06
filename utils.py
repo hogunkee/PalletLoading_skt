@@ -101,11 +101,11 @@ def calculate_loss_double_fcdqn(minibatch, FCQ, FCQ_target, gamma=0.5):
     a_prime = get_a_prime()
 
     next_q_target = FCQ_target(next_state, next_block)
-    q_target_s_a_prime = next_q_target[torch.arange(batch_size), a_prime[0], a_prime[1], a_prime[2]].unsqueeze(1)
+    q_target_s_a_prime = next_q_target[torch.arange(next_q_target.shape[0]), a_prime[0], a_prime[1], a_prime[2]].unsqueeze(1)
     y_target = rewards + gamma * not_done * q_target_s_a_prime
 
     q_values = FCQ(state, block)
-    pred = q_values[torch.arange(batch_size), actions[:, 0], actions[:, 1], actions[:, 2]]
+    pred = q_values[torch.arange(q_values.shape[0]), actions[:, 0], actions[:, 1], actions[:, 2]]
     pred = pred.view(-1, 1)
 
     loss = criterion(y_target, pred)

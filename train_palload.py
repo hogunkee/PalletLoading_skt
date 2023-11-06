@@ -89,6 +89,7 @@ def evaluate(env, model_path='', num_trials=10, b1=0.1, b2=0.1, show_q=False, n_
             if show_q:
                 env.q_value = q_map
             obs, reward, done = env.step(action)
+            print(reward)
             next_state, next_block = obs
             if len(next_state.shape)==2:
                 next_state = next_state[np.newaxis, :, :]
@@ -346,7 +347,7 @@ if __name__=='__main__':
     parser.add_argument("--bs", default=128, type=int)
     parser.add_argument("--buff_size", default=1e5, type=float)
     parser.add_argument("--total_episodes", default=2e5, type=float)
-    parser.add_argument("--learn_start", default=3e3, type=float)
+    parser.add_argument("--learn_start", default=1e3, type=float)
     parser.add_argument("--update_freq", default=250, type=int)
     parser.add_argument("--log_freq", default=250, type=int)
     parser.add_argument("--double", action="store_false") # default: True
@@ -365,17 +366,17 @@ if __name__=='__main__':
     args = parser.parse_args()
 
     # env configuration #
-    render = args.render
+    render = False #args.render
     b1 = args.b1
     b2 = args.b2
-    discrete_block = args.discrete
+    discrete_block = True #args.discrete
     max_steps = args.max_steps
     resolution = args.resolution
     reward_type = args.reward
     max_levels = args.max_levels
 
     # evaluate configuration #
-    evaluation = args.evaluate
+    evaluation = False #args.evaluate
     model_path = os.path.join("results/models/FCDQN_%s.pth"%args.model_path)
     num_trials = args.num_trials
     show_q = args.show_q
@@ -451,6 +452,7 @@ if __name__=='__main__':
         from models import FCQResNetSmall as FCQNet
     else:
         from models import FCQResNet as FCQNet
+    # from models import BinNet as FCQNet
 
     if evaluation:
         evaluate(env=env, model_path=model_path, num_trials=num_trials, b1=b1, b2=b2, 

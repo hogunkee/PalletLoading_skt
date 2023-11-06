@@ -138,7 +138,8 @@ class RewardFunc():
         if pad_boundary:
             state = np.pad(state, (1,1), 'constant', constant_values=(1))
             
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (10, 10))
+        #kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (10, 10))
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
         dilated = cv2.dilate(state, kernel).astype(bool).astype(float)
 
         if pad_boundary:
@@ -154,7 +155,7 @@ class RewardFunc():
         out_of_range = False
         if min_y < 0 or min_x < 0:
             out_of_range = True
-        elif max_y >= np.shape(state)[0] or max_x >= np.shape(state)[1]:
+        elif max_y > np.shape(state)[0] or max_x > np.shape(state)[1]:
             out_of_range = True
 
         # check collision #
@@ -178,10 +179,13 @@ class RewardFunc():
 
         elif self.reward_type=='dense':
             C = 1/100
-            p_box = self.get_pad_from_scene(box_placed, False).sum()
-            p_current = self.get_pad_from_scene(state).sum()
-            p_next = self.get_pad_from_scene(next_state).sum()
-            reward = C * (p_box + p_current - p_next)
+            # p_box = self.get_pad_from_scene(box_placed, False).sum()
+            # p_current = self.get_pad_from_scene(state).sum()
+            # p_next = self.get_pad_from_scene(next_state).sum()
+            # reward = C * (p_box + p_current - p_next)
+
+            p_current = self.get_pad_from_scene(state)
+            reward = 1.0 + 100.0*np.multiply(p_current,box_placed).sum()/np.ones(np.shape(state)).sum()
 
         elif self.reward_type=='dense2':
             C = 1/100
@@ -200,7 +204,7 @@ class RewardFunc():
         pose_list = stacked_history["pose_list"]
         quat_list = stacked_history["quat_list"]
         scale_list = stacked_history["scale_list"]
-        
+
         stability_ = self.stability_sim.stacking(pose_list, quat_list, scale_list,
                                                  render=self.sim_render)
         
@@ -281,7 +285,7 @@ class PalletLoadingSim(object):
         
         next_block = np.array(self.next_block)
         if self.box_norm:
-            next_block = np.array(self.next_block) * self.resolution
+            next_block = self.next_block
         else:
             next_block = np.round(np.array(self.next_block) * self.resolution).astype(int)
             
