@@ -179,13 +179,13 @@ class RewardFunc():
 
         elif self.reward_type=='dense':
             C = 1/100
-            # p_box = self.get_pad_from_scene(box_placed, False).sum()
-            # p_current = self.get_pad_from_scene(state).sum()
-            # p_next = self.get_pad_from_scene(next_state).sum()
-            # reward = C * (p_box + p_current - p_next)
+            p_box = self.get_pad_from_scene(box_placed, False).sum()
+            p_current = self.get_pad_from_scene(state).sum()
+            p_next = self.get_pad_from_scene(next_state).sum()
+            reward = C * (p_box + p_current - p_next)
 
-            p_current = self.get_pad_from_scene(state)
-            reward = 1.0 + 100.0*np.multiply(p_current,box_placed).sum()/np.ones(np.shape(state)).sum()
+            # p_current = self.get_pad_from_scene(state)
+            # reward = 1.0 + 100.0*np.multiply(p_current,box_placed).sum()/np.ones(np.shape(state)).sum()
 
         elif self.reward_type=='dense2':
             C = 1/100
