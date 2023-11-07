@@ -548,7 +548,7 @@ class FloorN(PalletLoadingSim):
         else:
             next_block = np.round(np.array(self.next_block) * self.resolution).astype(int)
         
-        next_block = np.array(next_block)
+        next_block = np.copy(next_block)
         obs = (np.copy(self.state), next_block[:2])
         return obs, reward, episode_end
 
