@@ -48,7 +48,7 @@ def get_action(env, fc_qnet, state, block, epsilon, crop_min=0, crop_max=64, pre
         #    q[pre_action[0], pre_action[1], pre_action[2]] = q.min()
         # image coordinate #
 
-        deterministic = False
+        deterministic = True
         if deterministic:
             aidx_y = q.max(0).max(1).argmax()
             aidx_x = q.max(0).max(0).argmax()
@@ -253,7 +253,7 @@ def learning(
                 if done:
                     break
                 else:
-                    state = next_state 
+                    state = np.copy(next_state)
                     block = next_block
                     pre_action = action
                     continue
@@ -285,7 +285,7 @@ def learning(
             if done:
                 break
             else:
-                state = next_state
+                state = np.copy(next_state)
                 block = next_block
                 pre_action = action
 

@@ -181,16 +181,16 @@ class RewardFunc():
             reward = 1.0
 
         elif self.reward_type=='dense':
-            # C = 1.0 #1/10 #1/100
-            # p_box = self.get_pad_from_scene(box_placed, False).sum()
-            # p_current = self.get_pad_from_scene(state).sum()
-            # p_next = self.get_pad_from_scene(next_state).sum()
-            # reward = C * (p_box + p_current - p_next)
+            C = 1.0 #1/10 #1/100
+            p_box = self.get_pad_from_scene(box_placed, False).sum()
+            p_current = self.get_pad_from_scene(state).sum()
+            p_next = self.get_pad_from_scene(next_state).sum()
+            reward = C * (p_box + p_current - p_next)
 
-            p_bound = self.get_pad_from_scene(np.zeros(np.shape(state)), True)
-            p_current = self.get_pad_from_scene(state, False)
-            reward = 0.5 * np.multiply(p_bound, box_placed).sum() \
-                + np.multiply(p_current, box_placed).sum()
+            # p_bound = self.get_pad_from_scene(np.zeros(np.shape(state)), True)
+            # p_current = self.get_pad_from_scene(state, False)
+            # reward = 0.5 * np.multiply(p_bound, box_placed).sum() \
+            #     + np.multiply(p_current, box_placed).sum()
 
         return reward, episode_end
 
