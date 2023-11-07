@@ -47,11 +47,24 @@ def get_action(env, fc_qnet, state, block, epsilon, crop_min=0, crop_max=64, pre
         #if pre_action is not None:
         #    q[pre_action[0], pre_action[1], pre_action[2]] = q.min()
         # image coordinate #
-        aidx_y = q.max(0).max(1).argmax()
-        aidx_x = q.max(0).max(0).argmax()
-        aidx_th = q.argmax(0)[aidx_y, aidx_x]
+
+        deterministic = False
+        if deterministic:
+            aidx_y = q.max(0).max(1).argmax()
+            aidx_x = q.max(0).max(0).argmax()
+            aidx_th = q.argmax(0)[aidx_y, aidx_x]
+        else:
+            soft_tmp = 1e-1
+            n_th, n_y, n_x = q.shape
+            q_probs = q.reshape((-1,))
+            q_probs = np.exp((q_probs-q_probs.max())/soft_tmp)
+            q_probs = q_probs / q_probs.sum()
+
+            aidx = np.random.choice(len(q_probs), 1, p=q_probs)[0]
+            aidx_th = aidx // (n_y*n_x)
+            aidx_y = (aidx % (n_y*n_x)) // n_x
+            aidx_x = (aidx % (n_y*n_x)) % n_x
         action = [aidx_th, aidx_y, aidx_x]
-        #action = [aidx_x, aidx_y, aidx_th]
 
     if with_q:
         return action, q
