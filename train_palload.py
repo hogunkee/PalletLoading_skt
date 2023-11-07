@@ -23,7 +23,7 @@ import wandb
 
 
 crop_min = 0 #22 #45 #9 #19 #11 #13
-def get_action(env, fc_qnet, state, block, epsilon, crop_min=0, crop_max=64, pre_action=None, with_q=False):
+def get_action(env, fc_qnet, state, block, epsilon, crop_min=0, crop_max=64, pre_action=None, with_q=False, deterministic=True):
     #crop_min_y = 
     if np.random.random() < epsilon:
         action = [np.random.choice([0, 1]), np.random.randint(crop_min,crop_max), np.random.randint(crop_min,crop_max)]
@@ -48,7 +48,7 @@ def get_action(env, fc_qnet, state, block, epsilon, crop_min=0, crop_max=64, pre
         #    q[pre_action[0], pre_action[1], pre_action[2]] = q.min()
         # image coordinate #
 
-        deterministic = True
+        #deterministic = False
         if deterministic:
             aidx_y = q.max(0).max(1).argmax()
             aidx_x = q.max(0).max(0).argmax()
@@ -227,7 +227,7 @@ def learning(
             count_steps += 1
             ep_len += 1
             action, q_map = get_action(env, FCQ, state, block,
-                                       epsilon=epsilon, crop_min=0, crop_max=resolution, pre_action=pre_action, with_q=True)
+                                       epsilon=epsilon, crop_min=0, crop_max=resolution, pre_action=pre_action, with_q=True, deterministic=False)
             if show_q:
                 env.q_value = q_map
             obs, reward, done = env.step(action)
