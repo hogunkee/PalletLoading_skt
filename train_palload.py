@@ -98,11 +98,12 @@ def evaluate(env, model_path='', num_trials=10, b1=0.1, b2=0.1, show_q=False, n_
         for t_step in range(env.num_steps):
             ep_len += 1
             action, q_map = get_action(env, FCQ, state, block,
-                                       epsilon=0.0, crop_min=0, crop_max=resolution, pre_action=pre_action, with_q=True)
+                                       epsilon=0.0, crop_min=0, crop_max=resolution,
+                                       pre_action=pre_action, with_q=True, deterministic=True)
             if show_q:
                 env.q_value = q_map
             obs, reward, done = env.step(action)
-            print(reward)
+
             next_state, next_block = obs
             if len(next_state.shape)==2:
                 next_state = next_state[np.newaxis, :, :]
@@ -163,9 +164,6 @@ def learning(
     FCQ_target = FCQNet(2, max_levels).cuda()
     FCQ_target.load_state_dict(FCQ.state_dict())
 
-    # criterion = nn.SmoothL1Loss(reduction=None).cuda()
-    # criterion = nn.MSELoss(reduction='mean')
-    #optimizer = torch.optim.SGD(FCQ.parameters(), lr=learning_rate, momentum=0.9, weight_decay=2e-5)
     optimizer = torch.optim.Adam(FCQ.parameters(), lr=learning_rate)
 
     replay_buffer = ReplayBuffer([max_levels, resolution, resolution], 2, dim_action=3, max_size=int(buff_size))
@@ -227,10 +225,13 @@ def learning(
             count_steps += 1
             ep_len += 1
             action, q_map = get_action(env, FCQ, state, block,
-                                       epsilon=epsilon, crop_min=0, crop_max=resolution, pre_action=pre_action, with_q=True, deterministic=False)
+                                       epsilon=epsilon, crop_min=0, crop_max=resolution,
+                                       pre_action=pre_action, with_q=True, deterministic=True)
             if show_q:
                 env.q_value = q_map
+
             obs, reward, done = env.step(action)
+
             next_state, next_block = obs
             if len(next_state.shape)==2:
                 next_state = next_state[np.newaxis, :, :]
@@ -253,7 +254,7 @@ def learning(
                 if done:
                     break
                 else:
-                    state = np.copy(next_state)
+                    state = next_state
                     block = next_block
                     pre_action = action
                     continue
@@ -285,7 +286,7 @@ def learning(
             if done:
                 break
             else:
-                state = np.copy(next_state)
+                state = next_state
                 block = next_block
                 pre_action = action
 
@@ -354,7 +355,7 @@ if __name__=='__main__':
     parser.add_argument("--max_steps", default=50, type=int)
     parser.add_argument("--resolution", default=10, type=int)
     parser.add_argument("--reward", default='dense', type=str)
-    parser.add_argument("--max_levels", default=5, type=int)
+    parser.add_argument("--max_levels", default=3, type=int)
     ## learning ##
     parser.add_argument("--lr", default=3e-4, type=float)
     parser.add_argument("--bs", default=128, type=int)
@@ -379,7 +380,7 @@ if __name__=='__main__':
     args = parser.parse_args()
 
     # env configuration #
-    render = False #args.render
+    render = True # True False #args.render
     b1 = args.b1
     b2 = args.b2
     discrete_block = True #args.discrete
@@ -454,18 +455,12 @@ if __name__=='__main__':
     double = args.double
     augmentation = args.augmentation
 
-    half = args.half
-    small = args.small
+    #half = args.half
+    #small = args.small
     continue_learning = args.continue_learning
-    if half:
-        n_hidden = 8
-    else:
-        n_hidden = 16
-    if small:
-        #from models import FCQResNetSmall as FCQNet
-        from models import BinNet as FCQNet
-    else:
-        from models import FCQResNet as FCQNet
+    
+    n_hidden = 16
+    from models import FCQResNet as FCQNet
 
     if evaluation:
         evaluate(env=env, model_path=model_path, num_trials=num_trials, b1=b1, b2=b2, 

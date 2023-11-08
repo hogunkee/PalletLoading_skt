@@ -80,13 +80,13 @@ Main
 
 
 class StabilityChecker():
-    def __init__(self, box_height, max_level=5):
+    def __init__(self, box_height, max_level=5,
+                 pallet_size=1.1, pallet_margin=0.05, pallet_gridsize=0.05):
 
         #self.simulation_app = SimulationApp(config)
 
         # set the simulation
         self.sim = SimulationContext(physics_dt=0.01, rendering_dt=0.01, backend="torch", device="cpu")
-        #self.sim = SimulationContext(physics_dt=0.01, rendering_dt=0.01, backend="torch", device="cuda:0")
         set_camera_view(eye=[1.5, 1.5, 1.5], target=[0.0, 0.0, 0.0])
         design_scene()
 
@@ -94,31 +94,38 @@ class StabilityChecker():
         self.box_height, self.max_level = box_height, max_level
 
         # add boxes
-        self.pallet_usd_path = f"{ISAAC_NUCLEUS_DIR}/Props/Pallet/pallet.usd"
-        #self.box_usd_path = "/home/minjae/Desktop/data/Box0.usd"
+        #self.pallet_usd_path = f"{ISAAC_NUCLEUS_DIR}/Props/Pallet/pallet.usd"
+        self.pallet_usd_path = os.getcwd() + "/environment/sim_objects/Box0.usd"
         self.box_usd_path = os.getcwd() + "/environment/sim_objects/Box0.usd"
         self.box_default_scale = [1.0, 1.0, 1.0]
 
+        pallet_pos = [pallet_size/2.0-pallet_margin-pallet_gridsize/2.0, pallet_size/2.0-pallet_margin, 0.0]
+        prim_utils.create_prim(f"/World/Pallet",
+                               usd_path=self.pallet_usd_path,
+                               position=pallet_pos,
+                               orientation=[0.0, 0.0, 0.0, 1.0],
+                               scale=[pallet_size, pallet_size, 0.01])
+        
         # initialize the simulator
-        self.n_boxes = 0
+        self.n_boxes = 0        
         self.sim.reset()
         print("[INFO]: Setup complete...")
-
 
 
     def reset_sim(self):
         for box_idx in range(self.n_boxes):
             prim_utils.delete_prim(f"/World/Objects/Box{box_idx}")
         self.n_boxes = 0
-        self.sim.reset()
+        self.sim.reset(soft=True)
 
     def set_box_height(self, box_height):
         self.box_height = box_height
 
-    def get_box_position(self):
+    def get_box_position(self, n_boxes=-1):
         box_pose_list, box_quat_list = [], []
+        if n_boxes < 0: n_boxes = self.n_boxes
 
-        for i in range(self.n_boxes):
+        for i in range(n_boxes):
             box00 = XFormPrim(prim_path=f"/World/Objects/Box{i}")
             pose, quat = box00.get_world_pose()
             box_pose_list.append(pose.tolist())
@@ -266,11 +273,12 @@ class StabilityChecker():
         box_outputs = self.get_box_position()
         return self.check_stability(box_inputs, box_outputs)
     
+    
 
 def main():
     box_height = 0.156
     checker = StabilityChecker(box_height=box_height, max_level=5)
-    render = True
+    render = False
 
     # stable case
     pose_ex1 = [0.00, 0.00, 0.0*box_height+0.00] #-0.8*box_height]
