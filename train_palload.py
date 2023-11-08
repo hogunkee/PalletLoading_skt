@@ -195,12 +195,12 @@ def learning(
         os.makedirs("results/board/")
 
     if len(log_epsilon) == 0:
-        epsilon = 0.5 #1.0
-        start_epsilon = 0.5
+        epsilon = 0.0 #0.5 #1.0
+        start_epsilon = 0.0 #0.5
     else:
         epsilon = log_epsilon[-1]
         start_epsilon = log_epsilon[-1]
-    min_epsilon = 0.1
+    min_epsilon = 0.0 #0.1
     epsilon_decay = 0.98
     max_return = -100
     st = time.time()
@@ -226,7 +226,7 @@ def learning(
             ep_len += 1
             action, q_map = get_action(env, FCQ, state, block,
                                        epsilon=epsilon, crop_min=0, crop_max=resolution,
-                                       pre_action=pre_action, with_q=True, deterministic=True)
+                                       pre_action=pre_action, with_q=True, deterministic=False)
             if show_q:
                 env.q_value = q_map
 
@@ -355,7 +355,7 @@ if __name__=='__main__':
     parser.add_argument("--max_steps", default=50, type=int)
     parser.add_argument("--resolution", default=10, type=int)
     parser.add_argument("--reward", default='dense', type=str)
-    parser.add_argument("--max_levels", default=3, type=int)
+    parser.add_argument("--max_levels", default=1, type=int)
     ## learning ##
     parser.add_argument("--lr", default=3e-4, type=float)
     parser.add_argument("--bs", default=128, type=int)
@@ -380,7 +380,7 @@ if __name__=='__main__':
     args = parser.parse_args()
 
     # env configuration #
-    render = True # True False #args.render
+    render = False # True False #args.render
     b1 = args.b1
     b2 = args.b2
     discrete_block = True #args.discrete

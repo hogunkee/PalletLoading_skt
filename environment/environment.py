@@ -180,16 +180,16 @@ class RewardFunc():
             reward = 1.0
 
         elif self.reward_type=='dense':
-            C = 1.0 #1/10 #1/100
-            p_box = self.get_pad_from_scene(box_placed, False).sum()
-            p_current = self.get_pad_from_scene(state).sum()
-            p_next = self.get_pad_from_scene(next_state).sum()
-            reward = C * (p_box + p_current - p_next)
+            # C = 1.0 #1/10 #1/100
+            # p_box = self.get_pad_from_scene(box_placed, False).sum()
+            # p_current = self.get_pad_from_scene(state).sum()
+            # p_next = self.get_pad_from_scene(next_state).sum()
+            # reward = C * (p_box + p_current - p_next)
 
-            # p_bound = self.get_pad_from_scene(np.zeros(np.shape(state)), True)
-            # p_current = self.get_pad_from_scene(state, False)
-            # reward = 0.5 * np.multiply(p_bound, box_placed).sum() \
-            #     + np.multiply(p_current, box_placed).sum()
+            p_bound = self.get_pad_from_scene(np.zeros(np.shape(state)), True)
+            p_current = self.get_pad_from_scene(state, False)
+            reward = 0.5 * np.multiply(p_bound, box_placed).sum() \
+                + np.multiply(p_current, box_placed).sum()
 
         return reward, episode_end
 
@@ -364,7 +364,7 @@ class Floor1(PalletLoadingSim):
         self.step_count += 1
 
         # previous state #
-        previous_state = self.state
+        previous_state = np.copy(self.state)
 
         # denormalize action #
         if self.action_norm:
@@ -378,23 +378,16 @@ class Floor1(PalletLoadingSim):
             next_block = np.round(np.array(self.next_block) * self.resolution).astype(int)
         
         action_rot = action[0]
-        cy, cx = action_pos
-
-        box_level = 1
-
-        pose_ = [cy/self.resolution, cx/self.resolution, (box_level-0.5)*self.box_height]
-        scale_ = [self.next_block[0], self.next_block[1], self.box_height]
+        cy, cx = action_pos        
 
         if action_rot==0:
-            by, bx, bh = next_block
+            by, bx, _ = next_block
             quat_ = [0.0, 0.0, 0.0, 1.0]
-        elif action_rot==1:
-            bx, by, bh = next_block
-            quat_ = [0.7071, 0.0, 0.0, 0.7071]
 
-        self.stacked_history["pose_list"].append(pose_)
-        self.stacked_history["quat_list"].append(quat_)
-        self.stacked_history["scale_list"].append(scale_)
+        elif action_rot==1:
+            bx, by, _ = next_block
+            quat_ = [0.7071, 0.0, 0.0, 0.7071]
+        by, bx = math.ceil(by), math.ceil(bx)
 
         # min_y = np.round(cy - (by-1e-5)/2).astype(int)
         # min_x = np.round(cx - (bx-1e-5)/2).astype(int)
@@ -405,8 +398,14 @@ class Floor1(PalletLoadingSim):
         next_block_bound = [min_y, max_y, min_x, max_x]
 
         box_placed = np.zeros(np.shape(self.state))
-        box_placed[max(min_y,0): max_y, max(min_x,0): max_x] = 1   
-        self.state = self.state + box_placed
+        box_placed[max(min_y,0): max_y, max(min_x,0): max_x] = 1
+
+        pose_ = [(min_y+max_y)/2/self.resolution, (min_x+max_x)/2/self.resolution, 0.01]
+        scale_ = [self.next_block[0], self.next_block[1], self.box_height]
+
+        self.stacked_history["pose_list"].append(pose_)
+        self.stacked_history["quat_list"].append(quat_)
+        self.stacked_history["scale_list"].append(scale_)
 
         box_level = np.max(self.level_map[max(min_y,0):max_y,max(min_x,0):max_x]) + 1
         self.level_map[max(min_y,0):max_y,max(min_x,0):max_x] = box_level
@@ -420,7 +419,7 @@ class Floor1(PalletLoadingSim):
 
         self.next_block = self.get_next_block()
         if self.box_norm:
-            next_block = self.next_block
+            next_block = np.copy(self.next_block)
         else:
             next_block = np.round(np.array(self.next_block) * self.resolution).astype(int)
         
@@ -543,7 +542,7 @@ class FloorN(PalletLoadingSim):
 
         self.next_block = self.get_next_block()
         if self.box_norm:
-            next_block = self.next_block
+            next_block = np.copy(self.next_block)
         else:
             next_block = np.round(np.array(self.next_block) * self.resolution).astype(int)
         
