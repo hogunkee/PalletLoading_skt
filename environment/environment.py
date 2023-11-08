@@ -399,6 +399,7 @@ class Floor1(PalletLoadingSim):
 
         box_placed = np.zeros(np.shape(self.state))
         box_placed[max(min_y,0): max_y, max(min_x,0): max_x] = 1
+        self.state = self.state + box_placed
 
         pose_ = [(min_y+max_y)/2/self.resolution, (min_x+max_x)/2/self.resolution, 0.01]
         scale_ = [self.next_block[0], self.next_block[1], self.box_height]

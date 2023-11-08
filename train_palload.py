@@ -371,7 +371,7 @@ if __name__=='__main__':
     parser.add_argument("--continue_learning", action="store_true")
     ## Evaluate ##
     parser.add_argument("--evaluate", action="store_true")
-    parser.add_argument("--model_path", default="####_####", type=str)
+    parser.add_argument("--model_path", default="1108_2344", type=str)
     parser.add_argument("--num_trials", default=50, type=int)
     # etc #
     parser.add_argument("--show_q", action="store_true")
@@ -390,7 +390,7 @@ if __name__=='__main__':
     max_levels = args.max_levels
 
     # evaluate configuration #
-    evaluation = False #args.evaluate
+    evaluation = False # True False #args.evaluate
     model_path = os.path.join("results/models/FCDQN_%s.pth"%args.model_path)
     num_trials = args.num_trials
     show_q = args.show_q
