@@ -111,12 +111,19 @@ class StabilityChecker():
         self.sim.reset()
         print("[INFO]: Setup complete...")
 
+        self.n_resets = 0
+
 
     def reset_sim(self):
         for box_idx in range(self.n_boxes):
             prim_utils.delete_prim(f"/World/Objects/Box{box_idx}")
         self.n_boxes = 0
-        self.sim.reset(soft=True)
+
+        self.n_resets += 1
+        soft_ = True
+        if self.n_resets % 10000 == 0:
+            soft_ = False
+        self.sim.reset(soft=soft_)
 
     def set_box_height(self, box_height):
         self.box_height = box_height
