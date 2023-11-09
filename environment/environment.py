@@ -279,7 +279,7 @@ class PalletLoadingSim(object):
 
         if self.render:
             next_blocks = [self.next_block] + self.block_que[:-1]
-            self.renderer.render_current_state(self.state, next_blocks, self.state)
+            self.renderer.render_current_state(self.state, next_blocks, self.state, self.q_value)
         
         if self.box_norm:
             next_block = np.copy(self.next_block)
@@ -414,7 +414,7 @@ class Floor1(PalletLoadingSim):
         if self.render:
             next_blocks = self.block_que
             self.renderer.render_current_state(self.state, next_blocks, previous_state,
-                                               box=next_block_bound)
+                                               self.q_value, box=next_block_bound)
 
         reward, episode_end = self.reward_fuc.get_2d_reward(previous_state, next_block_bound)
 
@@ -527,7 +527,7 @@ class FloorN(PalletLoadingSim):
         if self.render:
             next_blocks = self.block_que
             self.renderer.render_current_state(self.state, next_blocks, previous_state,
-                                               box=next_block_bound)
+                                               self.q_value, box=next_block_bound)
         pose_ = [(min_y+max_y)/2/self.resolution, (min_x+max_x)/2/self.resolution, (box_level-1)*self.box_height+0.01]
         scale_ = [self.next_block[0], self.next_block[1], self.box_height]
 

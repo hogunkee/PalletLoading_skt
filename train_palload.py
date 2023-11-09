@@ -380,12 +380,12 @@ if __name__=='__main__':
     args = parser.parse_args()
 
     # env configuration #
-    render = True # True False #args.render
+    render = False # True False #args.render
     b1 = args.b1
     b2 = args.b2
     discrete_block = True #args.discrete
     max_steps = args.max_steps
-    resolution = args.resolution
+    resolution = 20 #args.resolution
     reward_type = args.reward
     max_levels = args.max_levels
 
@@ -393,7 +393,7 @@ if __name__=='__main__':
     evaluation = False #args.evaluate
     model_path = os.path.join("results/models/FCDQN_%s.pth"%args.model_path)
     num_trials = args.num_trials
-    show_q = args.show_q
+    show_q = True# args.show_q
 
     gpu = args.gpu
     if "CUDA_VISIBLE_DEVICES" in os.environ:
@@ -417,7 +417,7 @@ if __name__=='__main__':
         log_name += '_%.2f' %b1
     else:
         log_name += '_%.2f-%.2f' %(b1, b2)
-    wandb_off = True # args.wandb_off
+    wandb_off = False # args.wandb_off
     if not (evaluation or wandb_off):
         wandb.init(project="SKT Palletizing")
         wandb.run.name = log_name
