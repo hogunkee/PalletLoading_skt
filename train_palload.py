@@ -460,7 +460,7 @@ if __name__=='__main__':
     continue_learning = args.continue_learning
     
     n_hidden = 16
-    from models import FCQResNet as FCQNet
+    from models import FCQResNetSmallV1113 as FCQNet
 
     if evaluation:
         evaluate(env=env, model_path=model_path, num_trials=num_trials, b1=b1, b2=b2, 
