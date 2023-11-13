@@ -134,14 +134,14 @@ class RewardFunc():
         self.max_levels = max_levels
         self.sim_render = sim_render
 
-    def get_pad_from_scene(self, state, pad_boundary=True):
+    def get_pad_from_scene(self, state, pad_boundary=True, ks=3):
         state = state.astype(bool).astype(float).copy()
 
         if pad_boundary:
             state = np.pad(state, (1,1), 'constant', constant_values=(1))
             
         # kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (10, 10))
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (ks, ks))
         dilated = cv2.dilate(state, kernel).astype(bool).astype(float)
 
         if pad_boundary:
@@ -195,13 +195,13 @@ class RewardFunc():
             volume = (max_y - min_y) * (max_x - min_x)
             reward_1 = volume / (state.shape[0] * state.shape[1])
 
-            p_bound = self.get_pad_from_scene(np.zeros(np.shape(state)), True)
-            p_current = self.get_pad_from_scene(state, False)
+            p_bound = self.get_pad_from_scene(np.zeros(np.shape(state)), True, 2)
+            p_current = self.get_pad_from_scene(state, False, 2)
             reward_2 = 0.5 * np.multiply(p_bound, box_placed).sum() \
                 + np.multiply(p_current, box_placed).sum()
 
-            beta_1 = 2.0
-            beta_2 = 0.3
+            beta_1 = 10.0
+            beta_2 = 0.1
             reward = beta_1 * reward_1 + beta_2 * reward_2
         return reward, episode_end
 
@@ -223,7 +223,7 @@ class RewardFunc():
             reward_2d, episode_end = self.get_2d_reward(state[box_level-1], block_bound)
 
             # negative reward for variation in height
-            heights = np.array(stacked_history)[:, 2]
+            heights = np.array(pose_list)[:, 2]
             reward_3 = (np.max(heights) - np.min(heights))
 
             beta_3 = 1.0

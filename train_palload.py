@@ -354,8 +354,8 @@ if __name__=='__main__':
     parser.add_argument("--discrete", action="store_true")
     parser.add_argument("--max_steps", default=50, type=int)
     parser.add_argument("--resolution", default=10, type=int)
-    parser.add_argument("--reward", default='dense', type=str)
-    parser.add_argument("--max_levels", default=1, type=int)
+    parser.add_argument("--reward", default='dense_v2', type=str)
+    parser.add_argument("--max_levels", default=3, type=int)
     ## learning ##
     parser.add_argument("--lr", default=3e-4, type=float)
     parser.add_argument("--bs", default=128, type=int)
@@ -404,7 +404,7 @@ if __name__=='__main__':
             os.environ['CUDA_VISIBLE_DEVICES'] = str(gpu)
 
     now = datetime.datetime.now()
-    savename = "FCDQN_%s" % (now.strftime("%m%d_%H%M"))
+    savename = "FCDQN-L%d_%s_%s" % (max_levels, now.strftime("%m%d_%H%M"), reward_type)
     if not evaluation:
         if not os.path.exists("results/config/"):
             os.makedirs("results/config/")
