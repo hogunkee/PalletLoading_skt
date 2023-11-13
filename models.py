@@ -63,7 +63,7 @@ class BasicBlock(nn.Module):
 
 class FCQResNetSmallV1113(nn.Module):
     def __init__(self, n_actions, in_ch, n_hidden=8, block=BasicBlock):
-        super(FCQResNetSmall, self).__init__()
+        super(FCQResNetSmallV1113, self).__init__()
         self.in_channel = 8
         self.n_actions = n_actions
         num_blocks = [2, 2, 1]
