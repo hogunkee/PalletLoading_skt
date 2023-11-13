@@ -72,69 +72,6 @@ def get_action(env, fc_qnet, state, block, epsilon, crop_min=0, crop_max=64, pre
         return action
 
 
-def evaluate(env, model_path='', num_trials=10, b1=0.1, b2=0.1, show_q=False, n_hidden=16,
-             resolution=64, max_levels=1):
-    FCQ = FCQNet(2, max_levels).cuda()
-    print('Loading trained model: {}'.format(model_path))
-    FCQ.load_state_dict(torch.load(model_path))
-    FCQ.eval()
-
-    log_returns = []
-    log_eplen = []
-    log_pf = []
-
-    pre_action = None
-
-    for ne in range(num_trials):
-        ep_len = 0
-        episode_reward = 0.
-
-        obs = env.reset()
-        state, block = obs
-        if len(state.shape)==2:
-            state = state[np.newaxis, :, :]
-
-        pre_action = None
-        for t_step in range(env.num_steps):
-            ep_len += 1
-            action, q_map = get_action(env, FCQ, state, block,
-                                       epsilon=0.0, crop_min=0, crop_max=resolution,
-                                       pre_action=pre_action, with_q=True, deterministic=True)
-            if show_q:
-                env.q_value = q_map
-            obs, reward, done = env.step(action)
-
-            next_state, next_block = obs
-            if len(next_state.shape)==2:
-                next_state = next_state[np.newaxis, :, :]
-            episode_reward += reward
-
-            if done:
-                break
-            else:
-                state = next_state
-                block = next_block
-                pre_action = action
-
-        packing_factor = state.sum() / np.ones_like(state).sum()
-        log_returns.append(episode_reward)
-        log_eplen.append(ep_len)
-        log_pf.append(packing_factor)
-
-        print("EP{}".format(ne+1), end=" / ")
-        print("reward:{0:.2f}".format(log_returns[-1]), end=" / ")
-        print("eplen:{0:.1f}".format(log_eplen[-1]), end=" / ")
-        print("mean reward:{0:.1f}".format(np.mean(log_returns)), end=" / ")
-        print("mean eplen:{0:.1f}".format(np.mean(log_eplen)), end=" / ")
-        print("mean packing factor:{0:.3f}".format(np.mean(log_pf)))
-
-    print()
-    print("="*80)
-    print("Evaluation Done.")
-    print("Mean reward: {0:.2f}".format(np.mean(log_returns)))
-    print("Mean episode length: {}".format(np.mean(log_eplen)))
-
-
 def learning(
         env, 
         savename,
@@ -153,9 +90,9 @@ def learning(
         b2=0.1,
         show_q=False,
         n_hidden=16,
-        augmentation=False,
         resolution=64,
         max_levels=1,
+        gamma=0.9,
         ):
 
     FCQ = FCQNet(2, max_levels).cuda()
@@ -211,9 +148,6 @@ def learning(
         ep_len = 0
         episode_reward = 0.
         log_minibatchloss = []
-        if augmentation:
-            history_blocks = []
-            history_actions = []
 
         obs = env.reset()
         state, block = obs
@@ -240,15 +174,6 @@ def learning(
             ## save transition to the replay buffer ##
             replay_buffer.add(state, block, action, next_state, next_block, reward, done)
 
-            # trajectory data augmentstion #
-            if augmentation and not done:
-                traj_samples = sample_trajectories(history_blocks, history_actions, next_state, resolution=resolution)
-                for traj_sample in traj_samples:
-                    state_re, block_re, action_re = traj_sample
-                    replay_buffer.add(state_re, block_re, action_re, next_state, next_block, reward, done)
-
-                history_blocks.append(block)
-                history_actions.append(action)
 
             if replay_buffer.size < learn_start:
                 if done:
@@ -276,7 +201,7 @@ def learning(
                     ]
             minibatch = replay_buffer.sample(batch_size-1)
             combined_minibatch = combine_batch(minibatch, data)
-            loss, _ = calculate_loss(combined_minibatch, FCQ, FCQ_target, gamma=0.9)
+            loss, _ = calculate_loss(combined_minibatch, FCQ, FCQ_target, gamma=gamma)
 
             optimizer.zero_grad()
             loss.backward()
@@ -354,8 +279,8 @@ if __name__=='__main__':
     parser.add_argument("--discrete", action="store_true")
     parser.add_argument("--max_steps", default=50, type=int)
     parser.add_argument("--resolution", default=10, type=int)
-    parser.add_argument("--reward", default='dense_v2', type=str)
-    parser.add_argument("--max_levels", default=3, type=int)
+    parser.add_argument("--reward", default='dense_v3', type=str)
+    parser.add_argument("--max_levels", default=1, type=int)
     ## learning ##
     parser.add_argument("--lr", default=3e-4, type=float)
     parser.add_argument("--bs", default=128, type=int)
@@ -365,7 +290,6 @@ if __name__=='__main__':
     parser.add_argument("--update_freq", default=250, type=int)
     parser.add_argument("--log_freq", default=250, type=int)
     parser.add_argument("--double", action="store_false") # default: True
-    parser.add_argument("--augmentation", action="store_true")
     parser.add_argument("--half", action="store_true")
     parser.add_argument("--small", action="store_true")
     parser.add_argument("--continue_learning", action="store_true")
@@ -453,7 +377,6 @@ if __name__=='__main__':
     update_freq = args.update_freq
     log_freq = args.log_freq
     double = args.double
-    augmentation = args.augmentation
 
     #half = args.half
     #small = args.small
@@ -471,4 +394,4 @@ if __name__=='__main__':
                  learn_start=learn_start, update_freq=update_freq, log_freq=log_freq, 
                  double=double, continue_learning=continue_learning, model_path=model_path, 
                  wandb_off=wandb_off, b1=b1, b2=b2, show_q=show_q, n_hidden=n_hidden,
-                 augmentation=augmentation, resolution=resolution, max_levels=max_levels)
+                 resolution=resolution, max_levels=max_levels)

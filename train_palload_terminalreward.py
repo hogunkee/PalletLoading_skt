@@ -220,9 +220,10 @@ def learning(
 
         if add_terminal_reward:
             terminal_reward = env.get_terminal_reward()
-            A = (1-gamma) / (1-gamma**t_step) * terminal_reward
+            A = (1-gamma) / (1-gamma**(t_step+1)) * terminal_reward
             new_trajectories = []
-            for traj in trajectories.reverse():
+            trajectories.reverse()
+            for traj in trajectories:
                 state, block, action, next_state, next_block, reward, done = traj
                 new_reward = reward + A
                 new_traj = copy.deepcopy([state, block, action, next_state, next_block, new_reward, done])
@@ -297,8 +298,8 @@ if __name__=='__main__':
     parser.add_argument("--discrete", action="store_true")
     parser.add_argument("--max_steps", default=50, type=int)
     parser.add_argument("--resolution", default=10, type=int)
-    parser.add_argument("--reward", default='dense_v2', type=str)
-    parser.add_argument("--max_levels", default=3, type=int)
+    parser.add_argument("--reward", default='dense', type=str)
+    parser.add_argument("--max_levels", default=1, type=int)
     ## learning ##
     parser.add_argument("--lr", default=3e-4, type=float)
     parser.add_argument("--bs", default=128, type=int)
@@ -412,4 +413,4 @@ if __name__=='__main__':
                  learn_start=learn_start, update_freq=update_freq, log_freq=log_freq, 
                  double=double, continue_learning=continue_learning, model_path=model_path, 
                  wandb_off=wandb_off, b1=b1, b2=b2, show_q=show_q, n_hidden=n_hidden,
-                 resolution=resolution, max_levels=max_levels, add_terminal_reward=False)
+                 resolution=resolution, max_levels=max_levels, add_terminal_reward=True)

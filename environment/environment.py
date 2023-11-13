@@ -203,6 +203,18 @@ class RewardFunc():
             beta_1 = 10.0
             beta_2 = 0.1
             reward = beta_1 * reward_1 + beta_2 * reward_2
+        elif self.reward_type=='dense_v3':
+            volume = (max_y - min_y) * (max_x - min_x)
+            reward_1 = volume / (state.shape[0] * state.shape[1])
+
+            p_bound = self.get_pad_from_scene(np.zeros(np.shape(state)), True, 2)
+            p_current = self.get_pad_from_scene(state, False, 2)
+            reward_2 = 0.5 * np.multiply(p_bound, box_placed).sum() \
+                + np.multiply(p_current, box_placed).sum()
+
+            beta_1 = 1.0
+            beta_2 = 1.0
+            reward = beta_1 * reward_1 + beta_2 * reward_2
         return reward, episode_end
 
     def get_3d_reward(self, state, block_bound, stacked_history, level_map, box_level):
@@ -237,7 +249,8 @@ class RewardFunc():
         v_packed = 0
         for h, w, _ in scale_list:
             v_packed += h * w
-        r_terminal = v_packed / (state.shape[0] * state.shape[1] * self.max_levels)
+        r_terminal = v_packed / self.max_levels
+        #r_terminal = v_packed / (state.shape[0] * state.shape[1] * self.max_levels)
         return r_terminal
 
 
