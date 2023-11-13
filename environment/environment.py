@@ -225,11 +225,20 @@ class RewardFunc():
             # negative reward for variation in height
             heights = np.array(pose_list)[:, 2]
             reward_3 = (np.max(heights) - np.min(heights))
+            #reward_3 = level_map.max() - level_map[level_map!=0].min()
 
             beta_3 = 1.0
             reward = reward_2d - beta_3 * reward_3
             
         return reward, episode_end
+    
+    def get_terminal_reward(self, state, stacked_history):
+        scale_list = stacked_history["scale_list"]
+        v_packed = 0
+        for h, w, _ in scale_list:
+            v_packed += h * w
+        r_terminal = v_packed / (state.shape[0] * state.shape[1] * self.max_levels)
+        return r_terminal
 
 
 class PalletLoadingSim(object):
@@ -445,6 +454,9 @@ class Floor1(PalletLoadingSim):
         next_block = np.copy(next_block)
         obs = (np.copy(self.state), next_block[:2])
         return obs, reward, episode_end
+
+    def get_terminal_reward(self):
+        return self.reward_fuc.get_terminal_reward(self.state, self.stacked_history)
     
 
 class FloorN(PalletLoadingSim):
@@ -569,7 +581,8 @@ class FloorN(PalletLoadingSim):
         obs = (np.copy(self.state), next_block[:2])
         return obs, reward, episode_end
 
-
+    def get_terminal_reward(self):
+        return self.reward_fuc.get_terminal_reward(self.state, self.stacked_history)
 
 
 
