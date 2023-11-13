@@ -89,7 +89,7 @@ class FCQResNetSmallV1113(nn.Module):
             nn.ConvTranspose2d(2*n_hidden, 1, 4, stride=2, bias=False, padding=1, output_padding=1),
         )
 
-        self._initialize_weights()
+        #self._initialize_weights()
 
     def _initialize_weights(self):
         for m in self.modules():
