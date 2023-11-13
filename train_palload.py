@@ -276,7 +276,7 @@ def learning(
                     ]
             minibatch = replay_buffer.sample(batch_size-1)
             combined_minibatch = combine_batch(minibatch, data)
-            loss, _ = calculate_loss(combined_minibatch, FCQ, FCQ_target)
+            loss, _ = calculate_loss(combined_minibatch, FCQ, FCQ_target, gamma=0.9)
 
             optimizer.zero_grad()
             loss.backward()

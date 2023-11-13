@@ -191,6 +191,18 @@ class RewardFunc():
             reward = 0.5 * np.multiply(p_bound, box_placed).sum() \
                 + np.multiply(p_current, box_placed).sum()
 
+        elif self.reward_type=='dense_v2':
+            volume = (max_y - min_y) * (max_x - min_x)
+            reward_1 = volume / (state.shape[0] * state.shape[1])
+
+            p_bound = self.get_pad_from_scene(np.zeros(np.shape(state)), True)
+            p_current = self.get_pad_from_scene(state, False)
+            reward_2 = 0.5 * np.multiply(p_bound, box_placed).sum() \
+                + np.multiply(p_current, box_placed).sum()
+
+            beta_1 = 2.0
+            beta_2 = 0.3
+            reward = beta_1 * reward_1 + beta_2 * reward_2
         return reward, episode_end
 
     def get_3d_reward(self, state, block_bound, stacked_history, level_map, box_level):
@@ -208,8 +220,14 @@ class RewardFunc():
         if not stability_:
             reward, episode_end = 0.0, True # 0.0, True
         else:
-            reward, episode_end = self.get_2d_reward(state[box_level-1], block_bound)
-            #if np.max(level_map) > box_level: reward = 0.0
+            reward_2d, episode_end = self.get_2d_reward(state[box_level-1], block_bound)
+
+            # negative reward for variation in height
+            heights = np.array(stacked_history)[:, 2]
+            reward_3 = (np.max(heights) - np.min(heights))
+
+            beta_3 = 1.0
+            reward = reward_2d - beta_3 * reward_3
             
         return reward, episode_end
 
