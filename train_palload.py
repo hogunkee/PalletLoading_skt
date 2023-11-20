@@ -78,6 +78,10 @@ def evaluate(
 
             if done: break
 
+        if use_terminal_reward:
+            terminal_reward = env.get_terminal_reward()
+            episode_reward += terminal_reward
+
         packing_factor = state.sum() / np.ones_like(state).sum()
         log_returns.append(episode_reward)
         log_eplen.append(ep_len)
@@ -120,6 +124,7 @@ def learning(
         use_bound_mask=False,
         use_floor_mask=False,
         use_projection=False,
+        use_terminal_reward=False,
     ):
     agent = Agent(max_levels, resolution, True,
                   learning_rate, model_path, continue_learning, double)
@@ -212,6 +217,8 @@ def learning(
 
         if use_terminal_reward:
             terminal_reward = env.get_terminal_reward()
+            episode_reward += terminal_reward
+
             new_trajectories = recalculate_rewards(trajectories, terminal_reward, t_step+1)
             trajectories = new_trajectories
 
