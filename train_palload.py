@@ -301,10 +301,10 @@ if __name__=='__main__':
     args = parser.parse_args()
 
     # env configuration #
-    render = False # True False #args.render
+    render = True #args.render
     discrete_block = True #args.discrete
     max_steps = args.max_steps
-    resolution = 20 #args.resolution
+    resolution = args.resolution
     reward_type = args.reward
     max_levels = args.max_levels
 

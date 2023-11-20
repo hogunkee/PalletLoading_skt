@@ -299,7 +299,7 @@ if __name__=='__main__':
     parser.add_argument("--max_steps", default=50, type=int)
     parser.add_argument("--resolution", default=10, type=int)
     parser.add_argument("--reward", default='dense', type=str)
-    parser.add_argument("--max_levels", default=1, type=int)
+    parser.add_argument("--max_levels", default=3, type=int)
     ## learning ##
     parser.add_argument("--lr", default=3e-4, type=float)
     parser.add_argument("--bs", default=128, type=int)
@@ -413,4 +413,5 @@ if __name__=='__main__':
                  learn_start=learn_start, update_freq=update_freq, log_freq=log_freq, 
                  double=double, continue_learning=continue_learning, model_path=model_path, 
                  wandb_off=wandb_off, b1=b1, b2=b2, show_q=show_q, n_hidden=n_hidden,
-                 resolution=resolution, max_levels=max_levels, add_terminal_reward=True)
+                 resolution=resolution, max_levels=max_levels, add_terminal_reward=True,
+                 gamma=0.5)

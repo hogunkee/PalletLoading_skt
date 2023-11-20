@@ -160,7 +160,7 @@ if __name__=='__main__':
     parser.add_argument("--small", action="store_true")
     parser.add_argument("--continue_learning", action="store_true")
     ## Evaluate ##
-    parser.add_argument("--model_path", default="1108_2344", type=str)
+    parser.add_argument("--model_path", default="113_2302", type=str)
     parser.add_argument("--num_trials", default=50, type=int)
     # etc #
     parser.add_argument("--show_q", action="store_true")
@@ -169,7 +169,7 @@ if __name__=='__main__':
     args = parser.parse_args()
 
     # env configuration #
-    render = False # True False #args.render
+    render = False
     b1 = args.b1
     b2 = args.b2
     discrete_block = True #args.discrete
@@ -179,7 +179,12 @@ if __name__=='__main__':
     max_levels = args.max_levels
 
     # evaluate configuration #
-    model_path = os.path.join("results/models/FCDQN_%s.pth"%args.model_path)
+    model_list = [f for f in os.listdir("results/models") if f.endswith(".pth")]
+    model_name = [f for f in model_list if args.model_path in f]
+    if len(model_name)==1:
+        model_name = model_name[0]
+    model_path = os.path.join("results/models/%s"%model_name)
+    #model_path = os.path.join("results/models/FCDQN_%s.pth"%args.model_path)
     num_trials = args.num_trials
     show_q = True# args.show_q
 

@@ -214,31 +214,29 @@ class RewardFunc():
         scale_list = stacked_history["scale_list"]
 
         stability_ = self.stability_sim.stacking(pose_list, quat_list, scale_list,
-                                                 render=self.sim_render, stack_type="at_once")
+                                     render=self.sim_render, stack_type="in_order") #"at_once"
         
         if not stability_:
             reward, episode_end = 0.0, True # 0.0, True
         else:
-<<<<<<< HEAD
-            reward_2d, episode_end = self.get_2d_reward(state[box_level-1], block_bound)
+            if False: # HG's version
+                reward_2d, episode_end = self.get_2d_reward(state[box_level-1], block_bound)
 
-            # negative reward for variation in height
-            heights = np.array(pose_list)[:, 2]
-            reward_3 = (np.max(heights) - np.min(heights))
-            #reward_3 = level_map.max() - level_map[level_map!=0].min()
+                # negative reward for variation in height
+                heights = np.array(pose_list)[:, 2]
+                reward_3 = (np.max(heights) - np.min(heights))
+                #reward_3 = level_map.max() - level_map[level_map!=0].min()
 
-            beta_3 = 1.0
-            reward = reward_2d - beta_3 * reward_3
-            
-=======
-            reward, episode_end = self.get_2d_reward(state[box_level-1], block_bound)
-            #if np.max(level_map) > box_level: reward = 0.0
-            if box_level > 1:
-                reward_factor = np.sum(state[box_level-2])/np.sum(np.ones_like(state[0]))
-                reward_factor = np.power(reward_factor, 2)
-                reward *= reward_factor
+                beta_3 = 1.0
+                reward = reward_2d - beta_3 * reward_3
+            else: # MJ/s version
+                reward, episode_end = self.get_2d_reward(state[box_level-1], block_bound)
+                #if np.max(level_map) > box_level: reward = 0.0
+                if box_level > 1:
+                    reward_factor = np.sum(state[box_level-2])/np.sum(np.ones_like(state[0]))
+                    reward_factor = np.power(reward_factor, 2)
+                    reward *= reward_factor
         
->>>>>>> minjae
         return reward, episode_end
     
     def get_terminal_reward(self, state, stacked_history):
