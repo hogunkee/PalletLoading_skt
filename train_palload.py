@@ -27,6 +27,7 @@ def evaluate(
         use_bound_mask=False,
         use_floor_mask=False,
         use_projection=False,
+        use_terminal_reward=False,
         print_info=False,
     ):
     if agent is None:
@@ -169,6 +170,7 @@ def learning(
         if len(state.shape)==2:
             state = state[np.newaxis, :, :]
 
+        trajectories = []
         for _ in range(env.num_steps):
             count_steps += 1
             ep_len += 1
@@ -193,7 +195,8 @@ def learning(
             episode_reward += reward
 
             ## save transition to the replay buffer ##
-            replay_buffer.add(state, block, action, next_state, next_block, reward, done)
+            trajectory = copy.deepcopy([state, block, action, next_state, next_block, reward, done])
+            trajectories.append(trajectory)
 
             state, block = next_state, next_block
 
@@ -206,6 +209,14 @@ def learning(
             log_minibatchloss.append(loss)
 
             if done: break
+
+        if use_terminal_reward:
+            terminal_reward = env.get_terminal_reward()
+            new_trajectories = recalculate_rewards(trajectories, terminal_reward, t_step+1)
+            trajectories = new_trajectories
+
+        for traj in trajectories:
+            replay_buffer.add(*traj)
 
         if replay_buffer.size <= learn_start:
             continue
@@ -371,6 +382,7 @@ if __name__=='__main__':
     use_bound_mask = True
     use_floor_mask = True
     use_projection = True
+    use_terminal_reward = False
 
     if args.algorithm == "DQN":
         from agent.DQN import DQN_Agent as Agent
@@ -385,8 +397,9 @@ if __name__=='__main__':
                  use_bound_mask=use_bound_mask, use_floor_mask=use_floor_mask, use_projection=use_projection)
     else:
         learning(env=env, savename=savename, learning_rate=learning_rate, 
-                 batch_size=batch_size, buff_size=buff_size,
-                 total_episodes=total_episodes, learn_start=learn_start, log_freq=log_freq, 
-                 double=double, continue_learning=continue_learning, model_path=model_path, 
-                 wandb_off=wandb_off, show_q=show_q, resolution=resolution, max_levels=max_levels,
-                 use_bound_mask=use_bound_mask, use_floor_mask=use_floor_mask, use_projection=use_projection)
+                 batch_size=batch_size, buff_size=buff_size, total_episodes=total_episodes, 
+                 learn_start=learn_start, log_freq=log_freq, double=double, 
+                 continue_learning=continue_learning, model_path=model_path, wandb_off=wandb_off,
+                 show_q=show_q, resolution=resolution, max_levels=max_levels,
+                 use_bound_mask=use_bound_mask, use_floor_mask=use_floor_mask, 
+                 use_projection=use_projection, use_terminal_reward=use_terminal_reward)
