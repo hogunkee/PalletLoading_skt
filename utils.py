@@ -293,3 +293,18 @@ def project_axis(axis, min_y, max_y, min_x, max_x, level_map, box_level0):
         proj_ += 1
     if proj_ > 0: proj_ -= 1
     return proj_
+
+def recalculate_rewards(trajectories, terminal_reward, T, gamma=0.5):
+    trajectories.reverse()
+    A = (1-gamma) / (1-gamma**T) * terminal_reward
+
+    new_trajectories = []
+    for traj in trajectories:
+        state, block, action, next_state, next_block, reward, done = traj
+        new_reward = reward + A
+
+        new_traj = deepcopy([state, block, action, next_state, next_block, new_reward, done])
+        new_trajectories.append(new_traj)
+
+        A *= gamma
+    return new_trajectories
