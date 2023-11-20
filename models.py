@@ -262,6 +262,7 @@ class FCQResNet(nn.Module):
             nn.ConvTranspose2d(1, 1, 3, stride=2, bias=False, padding=1, output_padding=1),
             nn.ConvTranspose2d(1, 1, 3, stride=2, bias=False, padding=1, output_padding=1),
             nn.ConvTranspose2d(1, 1, 3, stride=2, bias=False, padding=1, output_padding=1),
+            nn.ReLU(),
         )
 
         self._initialize_weights()
@@ -323,100 +324,51 @@ class FCQResNet(nn.Module):
     
 
 class BinNet(nn.Module):
-    def __init__(self, n_actions, in_ch, n_hidden=[8,16,21]):
+    def __init__(self, n_actions, in_ch, out_dim, n_hidden=[8,16,32]):
         super(BinNet, self).__init__()
         self.in_channel = 8
         self.n_actions = n_actions
         #num_blocks = [2, 2, 1, 1]
         self.pad = 2
 
-        self.conv1 = nn.Conv2d(in_ch, n_hidden[0], kernel_size=4, stride=2, padding=2, bias=True)
+        self.conv1 = nn.Conv2d(in_ch+2, n_hidden[0], kernel_size=3, stride=1, padding=1, bias=True)
         self.bn1 = nn.BatchNorm2d(n_hidden[0])
-        self.conv2 = nn.Conv2d(n_hidden[0], n_hidden[1], kernel_size=4, stride=2, padding=2, bias=True)
+        self.conv2 = nn.Conv2d(n_hidden[0], n_hidden[1], kernel_size=2, stride=2, padding=1, bias=True)
         self.bn2 = nn.BatchNorm2d(n_hidden[1])
-        self.conv3 = nn.Conv2d(n_hidden[1], n_hidden[2], kernel_size=2, stride=1, padding=1, bias=True)
+        self.conv3 = nn.Conv2d(n_hidden[1], n_hidden[2], kernel_size=2, stride=2, padding=1, bias=True)
         self.bn3 = nn.BatchNorm2d(n_hidden[2])
-        # self.layer1 = self._make_layer(block, n_hidden, num_blocks[0], stride=1)
-        # self.layer2 = self._make_layer(block, 2*n_hidden, num_blocks[1], stride=2)
-        # self.layer3 = self._make_layer(block, 4*n_hidden, num_blocks[2], stride=2)
-        # self.layer4 = self._make_layer(block, 8*n_hidden, num_blocks[3], stride=2)
 
-        # FC layers
-        # self.fully_conv = nn.Sequential(
-        #         nn.Conv2d(n_hidden[2] + 2, 2*n_hidden[2], kernel_size=1),
-        #         nn.ReLU(),
-        #         nn.Dropout2d(),
-        #         nn.Conv2d(2*n_hidden[0], 2*n_hidden[0], kernel_size=1),
-        #         nn.ReLU(),
-        #         nn.Dropout2d(),
-        #         nn.Conv2d(2*n_hidden[0], 1, kernel_size=1),
-        #         )
-        self.fully_conv = nn.Conv2d(n_hidden[2] + 2, 1, kernel_size=1)
+        self.conv_final = nn.Conv2d(n_hidden[2], 1, kernel_size=1)
 
-        # self.upscore = nn.ConvTranspose2d(1, 1, 16, stride=8, bias=False)
         self.upscore = nn.Sequential(
-            nn.ConvTranspose2d(1, 1, 3, stride=2, bias=False, padding=1, output_padding=1),
-            nn.ConvTranspose2d(1, 1, 3, stride=2, bias=False, padding=1, output_padding=1),
-            nn.ConvTranspose2d(1, 1, 3, stride=2, bias=False, padding=1, output_padding=1),
+            nn.Linear(4*4, 256),
+            nn.ReLU(),
+            nn.Linear(256, 256),
+            nn.ReLU(),
+            nn.Linear(256, out_dim*n_actions),
+            #nn.ReLU(),
+            #nn.Sigmoid(),
         )
 
-        self._initialize_weights()
+    def forward(self, x, block):
+        B0, L, H, W = x.size()
 
-    def _initialize_weights(self):
-        for m in self.modules():
-            if isinstance(m, nn.Linear) or isinstance(m, nn.Conv2d):
-                init.kaiming_normal_(m.weight)
-            if isinstance(m, nn.ConvTranspose2d):
-                assert m.kernel_size[0] == m.kernel_size[1]
-                initial_weight = get_upsampling_weight(
-                    m.in_channels, m.out_channels, m.kernel_size[0])
-                m.weight.data.copy_(initial_weight)
+        x_block = block[..., None, None]
+        x_block = torch.ceil(x_block*H).repeat(1,1,H,W)
+        x_cat = torch.cat([x, x_block], axis=1)
 
-    def _make_layer(self, block, channel, num_blocks, stride):
-        strides = [stride] + [1]*(num_blocks-1)
-        layers = []
-        for stride in strides:
-            layers.append(block(self.in_channel, channel, stride))
-            self.in_channel = channel * block.expansion
-
-        return nn.Sequential(*layers)
-
-    def forward(self, x, block, debug=False):
-        if debug:
-            frames = []
-            from matplotlib import pyplot as plt
-
-        B0 = x.size()[0]
-        pad = self.pad
-        x_pad = F.pad(x, (pad, pad, pad, pad), mode='constant', value=1)
-
-        x_cat = x.repeat([self.n_actions, 1, 1, 1])
         h = F.relu(self.bn1(self.conv1(x_cat)))
         h = F.relu(self.bn2(self.conv2(h)))
         h = F.relu(self.bn3(self.conv3(h)))
-        # h = self.layer1(h)
-        # h = self.layer2(h)
-        # h = self.layer3(h)
-        # h = self.layer4(h)
 
-        _, C, H, W = h.size()
-        if self.n_actions==1:
-            h_block = block.view(B0, 2, 1, 1).repeat([self.n_actions, 1, H, W])
-        else:
-            h_block_origin = block.view(B0, 2, 1, 1).repeat([1, 1, H, W])
-            block_flipped = block[..., [1, 0]]
-            h_block_flipped = block_flipped.view(B0, 2, 1, 1).repeat([1, 1, H, W])
-            h_block = torch.cat([h_block_origin, h_block_flipped], axis=0)
-        h_cat = torch.cat([h, h_block], axis=1)
-        h = self.fully_conv(h_cat)
-        h_after = self.upscore(h)
-        h_after = h_after[:, :, 
-                int((h_after.size()[2]-x.size()[2])/2):int((h_after.size()[2]+x.size()[2])/2),
-                int((h_after.size()[3]-x.size()[3])/2):int((h_after.size()[3]+x.size()[3])/2)
-                ]
-        
-        _, C2, H2, W2 = h_after.size() 
-        output_prob = h_after.view(self.n_actions, -1, H2, W2).permute([1, 0, 2, 3])
+        h = self.conv_final(h)
+        h = torch.flatten(h, start_dim=1)
+        output_prob = self.upscore(h)
+        output_prob = output_prob.view(-1, self.n_actions, H, W)
+
+        output_scale = 1e2
+        output_prob = torch.sigmoid(output_prob)*output_scale
+
         return output_prob
 
 

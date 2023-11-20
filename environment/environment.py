@@ -6,6 +6,7 @@ import matplotlib
 matplotlib.use('TkAgg')
 from matplotlib import pyplot as plt
 
+from utils import get_block_bound
 
 class Renderer():
     def __init__(self, resolution, show_q=False):
@@ -104,10 +105,6 @@ class Renderer():
             b = np.round(np.array(b) * self.resolution).astype(int)
             if len(b) > 2: b = b[:2]
             by, bx = b
-            # min_y = np.round(cy - (by-1e-5)/2).astype(int)
-            # min_x = np.round(cx - (bx-1e-5)/2).astype(int)
-            # max_y = np.round(cy + (by-1e-5)/2).astype(int)
-            # max_x = np.round(cx + (bx-1e-5)/2).astype(int)
             min_y, max_y = math.floor(cy-by/2), math.floor(cy+by/2)
             min_x, max_x = math.floor(cx-bx/2), math.floor(cx+bx/2)
 
@@ -140,7 +137,6 @@ class RewardFunc():
         if pad_boundary:
             state = np.pad(state, (1,1), 'constant', constant_values=(1))
             
-        # kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (10, 10))
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (ks, ks))
         dilated = cv2.dilate(state, kernel).astype(bool).astype(float)
 
@@ -180,7 +176,7 @@ class RewardFunc():
             reward = 1.0
 
         elif self.reward_type=='dense':
-            # C = 1.0 #1/10 #1/100
+            C = 1. #1/10 #1/3 #1/100
             # p_box = self.get_pad_from_scene(box_placed, False).sum()
             # p_current = self.get_pad_from_scene(state).sum()
             # p_next = self.get_pad_from_scene(next_state).sum()
@@ -190,20 +186,10 @@ class RewardFunc():
             p_current = self.get_pad_from_scene(state, False)
             reward = 0.5 * np.multiply(p_bound, box_placed).sum() \
                 + np.multiply(p_current, box_placed).sum()
+            
+            reward *= C
 
         elif self.reward_type=='dense_v2':
-            volume = (max_y - min_y) * (max_x - min_x)
-            reward_1 = volume / (state.shape[0] * state.shape[1])
-
-            p_bound = self.get_pad_from_scene(np.zeros(np.shape(state)), True, 2)
-            p_current = self.get_pad_from_scene(state, False, 2)
-            reward_2 = 0.5 * np.multiply(p_bound, box_placed).sum() \
-                + np.multiply(p_current, box_placed).sum()
-
-            beta_1 = 10.0
-            beta_2 = 0.1
-            reward = beta_1 * reward_1 + beta_2 * reward_2
-        elif self.reward_type=='dense_v3':
             volume = (max_y - min_y) * (max_x - min_x)
             reward_1 = volume / (state.shape[0] * state.shape[1])
 
@@ -215,6 +201,7 @@ class RewardFunc():
             beta_1 = 1.0
             beta_2 = 1.0
             reward = beta_1 * reward_1 + beta_2 * reward_2
+
         return reward, episode_end
 
     def get_3d_reward(self, state, block_bound, stacked_history, level_map, box_level):
@@ -232,6 +219,7 @@ class RewardFunc():
         if not stability_:
             reward, episode_end = 0.0, True # 0.0, True
         else:
+<<<<<<< HEAD
             reward_2d, episode_end = self.get_2d_reward(state[box_level-1], block_bound)
 
             # negative reward for variation in height
@@ -242,6 +230,15 @@ class RewardFunc():
             beta_3 = 1.0
             reward = reward_2d - beta_3 * reward_3
             
+=======
+            reward, episode_end = self.get_2d_reward(state[box_level-1], block_bound)
+            #if np.max(level_map) > box_level: reward = 0.0
+            if box_level > 1:
+                reward_factor = np.sum(state[box_level-2])/np.sum(np.ones_like(state[0]))
+                reward_factor = np.power(reward_factor, 2)
+                reward *= reward_factor
+        
+>>>>>>> minjae
         return reward, episode_end
     
     def get_terminal_reward(self, state, stacked_history):
@@ -260,7 +257,6 @@ class PalletLoadingSim(object):
                  num_steps=100,
                  num_preview=5,
                  box_norm=False,
-                 action_norm=False,
                  render=False,
                  block_size_min=0.2,
                  block_size_max=0.4,
@@ -291,7 +287,6 @@ class PalletLoadingSim(object):
         self.num_steps = num_steps
         self.num_preview = num_preview
         self.box_norm = box_norm
-        self.action_norm = action_norm
         self.render = render
         self.block_size_min = block_size_min
         self.block_size_max = block_size_max
@@ -350,8 +345,9 @@ class PalletLoadingSim(object):
 
     def make_new_block(self):
         if self.use_discrete_block:
-            new_block = 0.9 * np.random.choice([0.2, 0.3, 0.4, 0.5], 2, True,
-                                               p=[0.4, 0.3, 0.2, 0.1])
+            new_block = np.random.choice([0.2, 0.3, 0.4, 0.5], 2, True,
+                                          p=[0.4, 0.3, 0.2, 0.1])
+            new_block -= 0.01
         else:
             new_block = np.random.uniform(self.block_size_min, self.block_size_max, 2)
         new_block = np.append(new_block, self.box_height)
@@ -374,7 +370,6 @@ class Floor1(PalletLoadingSim):
         num_steps=100,
         num_preview=5,
         box_norm=False,
-        action_norm=False,
         render=False,
         block_size_min=0.2,
         block_size_max=0.4,
@@ -389,7 +384,6 @@ class Floor1(PalletLoadingSim):
             num_steps=num_steps,
             num_preview=num_preview,
             box_norm=box_norm,
-            action_norm=action_norm,
             render=render,
             block_size_min=block_size_min,
             block_size_max=block_size_max,
@@ -427,15 +421,9 @@ class Floor1(PalletLoadingSim):
         elif action_rot==1:
             bx, by, _ = next_block
             quat_ = [0.7071, 0.0, 0.0, 0.7071]
-        by, bx = math.ceil(by), math.ceil(bx)
 
-        # min_y = np.round(cy - (by-1e-5)/2).astype(int)
-        # min_x = np.round(cx - (bx-1e-5)/2).astype(int)
-        # max_y = np.round(cy + (by-1e-5)/2).astype(int)
-        # max_x = np.round(cx + (bx-1e-5)/2).astype(int)
-        min_y, max_y = math.floor(cy-by/2), math.floor(cy+by/2)
-        min_x, max_x = math.floor(cx-bx/2), math.floor(cx+bx/2)
-        next_block_bound = [min_y, max_y, min_x, max_x]
+        next_block_bound = get_block_bound(cy, cx, by, bx)
+        min_y, max_y, min_x, max_x = next_block_bound
 
         box_placed = np.zeros(np.shape(self.state))
         box_placed[max(min_y,0): max_y, max(min_x,0): max_x] = 1
@@ -462,7 +450,7 @@ class Floor1(PalletLoadingSim):
         if self.box_norm:
             next_block = np.copy(self.next_block)
         else:
-            next_block = np.round(np.array(self.next_block) * self.resolution).astype(int)
+            next_block = np.round(np.copy(self.next_block) * self.resolution).astype(int)
         
         next_block = np.copy(next_block)
         obs = (np.copy(self.state), next_block[:2])
@@ -479,7 +467,6 @@ class FloorN(PalletLoadingSim):
         num_steps=100,
         num_preview=5,
         box_norm=False,
-        action_norm=False,
         render=False,
         block_size_min=0.2,
         block_size_max=0.4,
@@ -494,7 +481,6 @@ class FloorN(PalletLoadingSim):
             num_steps=num_steps,
             num_preview=num_preview,
             box_norm=box_norm,
-            action_norm=action_norm,
             render=render,
             block_size_min=block_size_min,
             block_size_max=block_size_max,
@@ -507,6 +493,7 @@ class FloorN(PalletLoadingSim):
 
         from environment.sim_app import StabilityChecker
         stability_checker = StabilityChecker(box_height=self.box_height+6e-3, max_level=5)
+        #stability_checker = None
 
         self.reward_fuc = RewardFunc(reward_type,
                                      stability_sim=stability_checker,
@@ -525,19 +512,13 @@ class FloorN(PalletLoadingSim):
         # previous state #
         previous_state = np.copy(self.state)
 
-        # denormalize action #
-        if self.action_norm:
-            action_pos = np.array(action[1:]) * self.resolution
-        else:
-            action_pos = np.array(action[1:])
-
         if self.box_norm:
             next_block = np.array(self.next_block) * self.resolution
         else:
             next_block = np.round(np.array(self.next_block) * self.resolution).astype(int)
         
         action_rot = action[0]
-        cy, cx = action_pos        
+        cy, cx = np.array(action[1:])        
 
         if action_rot==0:
             by, bx, _ = next_block
@@ -546,16 +527,9 @@ class FloorN(PalletLoadingSim):
         elif action_rot==1:
             bx, by, _ = next_block
             quat_ = [0.7071, 0.0, 0.0, 0.7071]
-        by, bx = math.ceil(by), math.ceil(bx)
 
-        # min_y = np.round(cy - (by-1e-5)/2).astype(int)
-        # min_x = np.round(cx - (bx-1e-5)/2).astype(int)
-        # max_y = np.round(cy + (by-1e-5)/2).astype(int)
-        # max_x = np.round(cx + (bx-1e-5)/2).astype(int)
-        min_y, max_y = math.floor(cy-by/2), math.floor(cy+by/2)
-        min_x, max_x = math.floor(cx-bx/2), math.floor(cx+bx/2)
-
-        next_block_bound = [min_y, max_y, min_x, max_x]
+        next_block_bound = get_block_bound(cy, cx, by, bx)
+        min_y, max_y, min_x, max_x = next_block_bound
 
         box_placed = np.zeros(np.shape(self.state[0]))
         box_placed[max(min_y,0): max_y, max(min_x,0): max_x] = 1
@@ -588,7 +562,7 @@ class FloorN(PalletLoadingSim):
         if self.box_norm:
             next_block = np.copy(self.next_block)
         else:
-            next_block = np.round(np.array(self.next_block) * self.resolution).astype(int)
+            next_block = np.round(np.copy(self.next_block) * self.resolution).astype(int)
         
         next_block = np.copy(next_block)
         obs = (np.copy(self.state), next_block[:2])

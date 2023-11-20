@@ -26,6 +26,7 @@ simulation_app = SimulationApp(config)
 """Rest everything follows."""
 
 import scipy.spatial.transform as tf
+from scipy.spatial.transform import Rotation
 import os
 import torch
 import time
@@ -145,7 +146,7 @@ class StabilityChecker():
         level_list, eps = [], 0.02
         for pose in pose_list:
             current_level = int((pose[2]+eps)/self.box_height)
-            assert 0 <=current_level < self.max_level
+            #assert 0 <=current_level < self.max_level
             level_list.append(current_level)
         return level_list
     
@@ -165,7 +166,7 @@ class StabilityChecker():
         return stack_order
 
     def check_stability(self, input_list, output_list,
-                        min_pose_error=0.03, min_quat_error=5, print_info=False):
+                        min_pose_error=0.02, min_quat_error=10.0, print_info=False):
         input_pose, input_quat = input_list
         output_pose, output_quat = output_list
         n_boxes = len(input_pose)
@@ -183,7 +184,19 @@ class StabilityChecker():
                     )]
             dist_ = math.sqrt(sum(dist_))
 
-            if dist_ > min_pose_error or input_level[i] != output_level[i]:
+            rot_input_ = Rotation.from_quat(input_quat[i])
+            euler_input_ = rot_input_.as_euler('xyz', degrees=True)
+            rot_output_ = Rotation.from_quat(output_quat[i])
+            euler_output_ = rot_output_.as_euler('xyz', degrees=True)
+            euler_ = max([
+                abs(euler_input_[0]-euler_output_[0]),
+                abs(euler_input_[1]-euler_output_[1]),
+                abs(euler_input_[2]-euler_output_[2]),
+            ])
+            #euler_ = abs(euler_input_[2]-euler_output_[2])
+            euler_ = min(euler_, 180-euler_)
+
+            if dist_ > min_pose_error or input_level[i] != output_level[i] or euler_ > min_quat_error:
                 stability_ = False
                 moved_boxes.append(i)
 
@@ -285,7 +298,7 @@ class StabilityChecker():
 def main():
     box_height = 0.156
     checker = StabilityChecker(box_height=box_height, max_level=5)
-    render = False
+    render = True
 
     # stable case
     pose_ex1 = [0.00, 0.00, 0.0*box_height+0.00] #-0.8*box_height]
