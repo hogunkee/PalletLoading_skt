@@ -3,6 +3,7 @@ import datetime
 import time
 import os
 import json
+from copy import deepcopy
 
 import torch
 from utils import *
@@ -200,7 +201,7 @@ def learning(
             episode_reward += reward
 
             ## save transition to the replay buffer ##
-            trajectory = copy.deepcopy([state, block, action, next_state, next_block, reward, done])
+            trajectory = deepcopy([state, block, action, next_state, next_block, reward, done])
             trajectories.append(trajectory)
 
             state, block = next_state, next_block
@@ -319,7 +320,7 @@ if __name__=='__main__':
     args = parser.parse_args()
 
     # env configuration #
-    render = True #args.render
+    render = False #args.render
     discrete_block = True #args.discrete
     max_steps = args.max_steps
     resolution = args.resolution
