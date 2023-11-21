@@ -96,7 +96,7 @@ class StabilityChecker():
 
         # add boxes
         #self.pallet_usd_path = f"{ISAAC_NUCLEUS_DIR}/Props/Pallet/pallet.usd"
-        self.pallet_usd_path = os.getcwd() + "/environment/sim_objects/Box0.usd"
+        self.pallet_usd_path = os.getcwd() + "/environment/sim_objects/Box1.usd"
         self.box_usd_path = os.getcwd() + "/environment/sim_objects/Box0.usd"
         self.box_default_scale = [1.0, 1.0, 1.0]
 

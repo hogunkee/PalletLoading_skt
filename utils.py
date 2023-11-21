@@ -82,14 +82,16 @@ def calculate_loss_double_fcdqn(minibatch, FCQ, FCQ_target, gamma=0.95):
     block = minibatch[1]
     next_state = minibatch[2]
     next_block = minibatch[3]
-    actions = minibatch[4].type(torch.long)
-    rewards = minibatch[5]
-    not_done = minibatch[6]
+    next_qmask = minibatch[4]
+    actions = minibatch[5].type(torch.long)
+    rewards = minibatch[6]
+    not_done = minibatch[7]
     batch_size = state.size()[0]
 
     def get_a_prime():
         next_q = FCQ(next_state, next_block)
-        #next_q = FCQ_target(next_state, next_block)
+        next_q *= next_qmask
+
         aidx_y = next_q.max(1)[0].max(2)[0].max(1)[1]
         aidx_x = next_q.max(1)[0].max(1)[0].max(1)[1]
         aidx_th = next_q.max(2)[0].max(2)[0].max(1)[1]
@@ -256,7 +258,6 @@ def action_projection(state, block, action, box_norm=True):
     box_level0 = np.max(level_map[max(min_y,0):max_y,max(min_x,0):max_x]) + 1
     if box_level0 > max_level:
         return [action_rot, cy, cx]
-    
 
     while True:
         proj_y = project_axis("y",

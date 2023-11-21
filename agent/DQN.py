@@ -42,6 +42,7 @@ class DQN_Agent():
 
         q_value = self.FCQ(state_tensor, block_tensor)
         q_value = q_value[0].detach().cpu().numpy()
+        #q_value = np.random.rand(q_value.shape[0],q_value.shape[1],q_value.shape[2])
 
         use_mask = True if q_mask is not None else False
         use_projection = True if p_project > 0.0 else False
@@ -49,9 +50,11 @@ class DQN_Agent():
         if deterministic:
             if use_mask: q_value *= q_mask
 
-            aidx_y = q_value.max(0).max(1).argmax()
-            aidx_x = q_value.max(0).max(0).argmax()
-            aidx_th = q_value.argmax(0)[aidx_y, aidx_x]
+            n_th, n_y, n_x = q_value.shape
+            aidx = np.argmax(q_value)
+            aidx_th = aidx // (n_y*n_x)
+            aidx_y = (aidx % (n_y*n_x)) // n_x
+            aidx_x = (aidx % (n_y*n_x)) % n_x
                 
         else:
             n_th, n_y, n_x = q_value.shape

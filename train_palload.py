@@ -58,13 +58,13 @@ def evaluate(
 
             if use_bound_mask:
                 q_mask = generate_bound_mask(state, block)
-
             if use_floor_mask:
                 q_mask = generate_floor_mask(state, block, q_mask)
 
             action, q_map = agent.get_action(state, block,
                                              with_q=True, deterministic=True,
                                              q_mask=q_mask, p_project=p_projection)
+
             if show_q:
                 env.q_value = q_map
 
@@ -161,9 +161,9 @@ def learning(
         q_mask = None
 
         if use_projection:
-            p_projection = 0.5
+            p_projection = 0.70
         else:
-            p_projection = 0.0
+            p_projection = 0.00
 
         obs = env.reset()
         state, block = obs
@@ -193,8 +193,14 @@ def learning(
                 next_state = next_state[np.newaxis, :, :]
             episode_reward += reward
 
+            next_q_mask = np.ones((2,resolution,resolution))
+            if use_bound_mask:
+                next_q_mask = generate_bound_mask(next_state, next_block)
+            if use_floor_mask:
+                next_q_mask = generate_floor_mask(next_state, next_block, next_q_mask)
+
             ## save transition to the replay buffer ##
-            replay_buffer.add(state, block, action, next_state, next_block, reward, done)
+            replay_buffer.add(state, block, action, next_state, next_block, next_q_mask, reward, done)
 
             state, block = next_state, next_block
 
@@ -286,15 +292,15 @@ if __name__=='__main__':
     parser.add_argument("--bs", default=256, type=int)
     parser.add_argument("--buff_size", default=1e5, type=float)
     parser.add_argument("--total_episodes", default=5e5, type=float)
-    parser.add_argument("--learn_start", default=1e3, type=float)
+    parser.add_argument("--learn_start", default=0, type=float)
     parser.add_argument("--update_freq", default=250, type=int)
     parser.add_argument("--log_freq", default=250, type=int)
     parser.add_argument("--double", action="store_false") # default: True
     parser.add_argument("--continue_learning", action="store_true")
     ## Evaluate ##
     parser.add_argument("--evaluate", action="store_true")
-    parser.add_argument("--model_path", default="####_####", type=str)
-    parser.add_argument("--num_trials", default=50, type=int)
+    parser.add_argument("--model_path", default="1120_2313_last", type=str)
+    parser.add_argument("--num_trials", default=25, type=int)
     # etc #
     parser.add_argument("--show_q", action="store_true")
     parser.add_argument("--gpu", default=-1, type=int)
@@ -302,7 +308,7 @@ if __name__=='__main__':
     args = parser.parse_args()
 
     # env configuration #
-    render = False # True False #args.render
+    render = True # True False #args.render
     discrete_block = True #args.discrete
     max_steps = args.max_steps
     resolution = args.resolution
@@ -310,7 +316,7 @@ if __name__=='__main__':
     max_levels = args.max_levels
 
     # evaluate configuration #
-    evaluation = False # True False #args.evaluate
+    evaluation = True # True False #args.evaluate
     model_path = os.path.join("results/models/FCDQN_%s.pth"%args.model_path)
     num_trials = args.num_trials
     show_q = False #args.show_q
