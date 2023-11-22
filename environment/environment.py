@@ -207,7 +207,6 @@ class RewardFunc():
             reward, episode_end = 0.0, True # 0.0, True
         else:
             reward, episode_end = self.get_2d_reward(state[box_level-1], block_bound)
-            #if np.max(level_map) > box_level: reward = 0.0
             if box_level > 1:
                 reward_factor = np.sum(state[box_level-2])/np.sum(np.ones_like(state[0]))
                 reward_factor = np.power(reward_factor, 2)
@@ -257,7 +256,7 @@ class PalletLoadingSim(object):
         self.block_size_max = block_size_max
         self.use_discrete_block = discrete_block
 
-        self.box_height = 0.15
+        self.box_height = 0.156
         self.q_value = None
         self.block_que = []
         self.max_levels = max_levels
@@ -454,7 +453,7 @@ class FloorN(PalletLoadingSim):
         assert max_levels >= 2
 
         from environment.sim_app import StabilityChecker
-        stability_checker = StabilityChecker(box_height=self.box_height+6e-3, max_level=5)
+        stability_checker = StabilityChecker(box_height=self.box_height, max_level=5)
         #stability_checker = None
 
         self.reward_fuc = RewardFunc(reward_type,
@@ -507,7 +506,7 @@ class FloorN(PalletLoadingSim):
             next_blocks = self.block_que
             self.renderer.render_current_state(self.state, next_blocks, previous_state,
                                                box=next_block_bound)
-        pose_ = [(min_y+max_y)/2/self.resolution, (min_x+max_x)/2/self.resolution, (box_level-1)*self.box_height+0.01]
+        pose_ = [(min_y+max_y)/2/self.resolution, (min_x+max_x)/2/self.resolution, (box_level-1)*self.box_height]
         scale_ = [self.next_block[0], self.next_block[1], self.box_height]
 
         self.stacked_history["pose_list"].append(pose_)

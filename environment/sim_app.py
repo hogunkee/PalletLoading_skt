@@ -37,9 +37,6 @@ from omni.isaac.core.simulation_context import SimulationContext
 from omni.isaac.core.utils.viewports import set_camera_view
 
 import omni.isaac.orbit.utils.kit as kit_utils
-from omni.isaac.orbit.objects.rigid import RigidObject, RigidObjectCfg
-from omni.isaac.orbit.utils.assets import ISAAC_NUCLEUS_DIR, ISAAC_ORBIT_NUCLEUS_DIR, NUCLEUS_DIR
-from omni.isaac.orbit.utils.math import convert_quat, quat_mul, random_yaw_orientation, sample_cylinder
 from omni.isaac.core.prims import XFormPrim
 from omni.isaac.core.utils.bounds import compute_aabb, create_bbox_cache
 
@@ -166,7 +163,7 @@ class StabilityChecker():
         return stack_order
 
     def check_stability(self, input_list, output_list,
-                        min_pose_error=0.02, min_quat_error=10.0, print_info=False):
+                        min_pose_error=0.03, min_quat_error=10.0, print_info=False):
         input_pose, input_quat = input_list
         output_pose, output_quat = output_list
         n_boxes = len(input_pose)
@@ -199,6 +196,10 @@ class StabilityChecker():
             if dist_ > min_pose_error or input_level[i] != output_level[i] or euler_ > min_quat_error:
                 stability_ = False
                 moved_boxes.append(i)
+
+                # if dist_ > min_pose_error: print("D:", i, dist_)
+                # if input_level[i] != output_level[i]: print("L:", i, input_level[i], output_level[i])
+                # if euler_ > min_quat_error: print("Q:", i, euler_input_[0]-euler_output_[0], euler_input_[1]-euler_output_[1], euler_input_[2]-euler_output_[2])
 
         if print_info:
             if len(moved_boxes) == 1:
