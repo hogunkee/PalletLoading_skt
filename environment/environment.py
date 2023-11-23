@@ -229,9 +229,8 @@ class RewardFunc():
 
                 beta_3 = 1.0
                 reward = reward_2d - beta_3 * reward_3
-            else: # MJ/s version
+            else: # MJ's version
                 reward, episode_end = self.get_2d_reward(state[box_level-1], block_bound)
-                #if np.max(level_map) > box_level: reward = 0.0
                 if box_level > 1:
                     reward_factor = np.sum(state[box_level-2])/np.sum(np.ones_like(state[0]))
                     reward_factor = np.power(reward_factor, 2)
@@ -312,7 +311,7 @@ class PalletLoadingSim(object):
 
         if self.render:
             next_blocks = [self.next_block] + self.block_que[:-1]
-            self.renderer.render_current_state(self.state, next_blocks, self.state, self.q_value)
+            self.renderer.render_current_state(self.state, next_blocks, self.state.q_value)
         
         if self.box_norm:
             next_block = np.copy(self.next_block)
@@ -490,7 +489,7 @@ class FloorN(PalletLoadingSim):
         assert max_levels >= 2
 
         from environment.sim_app import StabilityChecker
-        stability_checker = StabilityChecker(box_height=self.box_height+6e-3, max_level=5)
+        stability_checker = StabilityChecker(box_height=self.box_height, max_level=5)
         #stability_checker = None
 
         self.reward_fuc = RewardFunc(reward_type,

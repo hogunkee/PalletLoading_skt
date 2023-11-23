@@ -1,4 +1,3 @@
-import cv2
 import math
 import numpy as np
 from copy import deepcopy
@@ -6,108 +5,15 @@ from copy import deepcopy
 import torch
 import torch.nn as nn
 
-
 #criterion = nn.SmoothL1Loss(reduction='mean').cuda()
 criterion = nn.MSELoss(reduction='mean').cuda()
 
-def sample_trajectories(blocks, actions, current_state, resolution):
-    trajectories = []
-    for block, action in zip(blocks, actions):
-        # make box region #
-        cy, cx, _ = action
-        by, bx = np.round(np.array(block) * resolution).astype(int)
-        min_y = np.round(cy - (by-1e-5)/2).astype(int)
-        min_x = np.round(cx - (bx-1e-5)/2).astype(int)
-        max_y = np.round(cy + (by-1e-5)/2).astype(int)
-        max_x = np.round(cx + (bx-1e-5)/2).astype(int)
-
-        state_copy = current_state.copy()
-        state_copy[0, min_y: max_y, min_x: max_x] = 0
-        traj = (state_copy, block, action)
-        trajectories.append(traj)
-    return trajectories
 
 def smoothing_log(log_data, log_freq):
     return np.convolve(log_data, np.ones(log_freq), 'valid') / log_freq
 
 def smoothing_log_same(log_data, log_freq):
     return np.concatenate([np.array([np.nan] * (log_freq-1)), np.convolve(log_data, np.ones(log_freq), 'valid') / log_freq])
-
-def combine_batch(minibatch, data):
-    try:
-        combined = []
-        if minibatch is None:
-            for i in range(len(data)):
-                combined.append(data[i].unsqueeze(0))
-        else:
-            for i in range(len(minibatch)):
-                combined.append(torch.cat([minibatch[i], data[i].unsqueeze(0)]))
-    except:
-        print(i)
-        print('minibatch:', len(minibatch))
-        print(minibatch[i].shape)
-        print('data:', len(data))
-        print(data[i].shape)
-        print(minibatch[i])
-        print(data[i])
-    return combined
-
-
-## FCDQN Loss ##
-def calculate_loss_fcdqn(minibatch, FCQ, FCQ_target, gamma=0.5):
-    state = minibatch[0]
-    block = minibatch[1]
-    next_state = minibatch[2]
-    next_block = minibatch[3]
-    actions = minibatch[4].type(torch.long)
-    rewards = minibatch[5]
-    not_done = minibatch[6]
-    batch_size = state.size()[0]
-
-    next_q = FCQ_target(next_state, next_block)
-    next_q_max = next_q.max(1)[0].max(1)[0].max(1)[0]
-    #next_q_max = next_q[torch.arange(batch_size), :, actions[:, 0], actions[:, 1]].max(1, True)[0]
-    y_target = rewards + gamma * not_done * next_q_max
-
-    q_values = FCQ(state, block)
-    pred = q_values[torch.arange(batch_size), actions[:, 0], actions[:, 1], actions[:, 2]]
-    pred = pred.view(-1, 1)
-
-    loss = criterion(y_target, pred)
-    error = torch.abs(pred - y_target)
-    return loss, error
-
-def calculate_loss_double_fcdqn(minibatch, FCQ, FCQ_target, gamma=0.95):
-    state = minibatch[0]
-    block = minibatch[1]
-    next_state = minibatch[2]
-    next_block = minibatch[3]
-    actions = minibatch[4].type(torch.long)
-    rewards = minibatch[5]
-    not_done = minibatch[6]
-    batch_size = state.size()[0]
-
-    def get_a_prime():
-        next_q = FCQ(next_state, next_block)
-        #next_q = FCQ_target(next_state, next_block)
-        aidx_y = next_q.max(1)[0].max(2)[0].max(1)[1]
-        aidx_x = next_q.max(1)[0].max(1)[0].max(1)[1]
-        aidx_th = next_q.max(2)[0].max(2)[0].max(1)[1]
-        return aidx_th, aidx_y, aidx_x
-
-    a_prime = get_a_prime()
-
-    next_q_target = FCQ_target(next_state, next_block)
-    q_target_s_a_prime = next_q_target[torch.arange(next_q_target.shape[0]), a_prime[0], a_prime[1], a_prime[2]].unsqueeze(1)
-    y_target = rewards + gamma * not_done * q_target_s_a_prime
-
-    q_values = FCQ(state, block)
-    pred = q_values[torch.arange(q_values.shape[0]), actions[:, 0], actions[:, 1], actions[:, 2]]
-    pred = pred.view(-1, 1)
-
-    loss = criterion(y_target, pred)
-    error = torch.abs(pred - y_target)
-    return loss, error
 
 
 def get_block_bound(center_y, center_x, block_y, block_x):    
@@ -141,38 +47,46 @@ def generate_floor_mask(state, block, pre_mask=None):
     cum_state = generate_cumulative_state(state)
     level_map = np.sum(cum_state, axis=0)
 
-    min_packed_ratio, empty_level = 0.75, -1
+    min_packed_ratio, empty_level = 0.80, -1
     for i in range(0,max_level-1):
         if np.mean(cum_state[i]) < min_packed_ratio:
             empty_level = i+1
             break
 
-    if empty_level > 0:   
-        for y_ in range(resolution):
-            for x_ in range(resolution):
-                if mask[0,y_,x_] == 0: continue
-                min_y, max_y = math.floor(y_-by/2), math.floor(y_+by/2)
-                min_x, max_x = math.floor(x_-bx/2), math.floor(x_+bx/2)
+    if empty_level > 0:
+        for level_limit in range(empty_level, max_level):
+            if pre_mask is None:
+                mask = np.ones((2,resolution,resolution))
+            else:
+                mask = np.copy(pre_mask)
 
-                box_placed = np.zeros(np.shape(state[0]))
-                box_placed[max(min_y,0): max_y, max(min_x,0): max_x] = 1
+            for y_ in range(resolution):
+                for x_ in range(resolution):
+                    if mask[0,y_,x_] == 0: continue
+                    min_y, max_y = math.floor(y_-by/2), math.floor(y_+by/2)
+                    min_x, max_x = math.floor(x_-bx/2), math.floor(x_+bx/2)
 
-                curr_map = level_map + box_placed
-                if len(np.where(np.array(curr_map)>empty_level)[0]) > 0:
-                    mask[0,y_,x_] = 0
+                    box_placed = np.zeros(np.shape(state[0]))
+                    box_placed[max(min_y,0): max_y, max(min_x,0): max_x] = 1
 
-        for y_ in range(resolution):
-            for x_ in range(resolution):
-                if mask[1,x_,y_] == 0: continue
-                min_y, max_y = math.floor(y_-by/2), math.floor(y_+by/2)
-                min_x, max_x = math.floor(x_-bx/2), math.floor(x_+bx/2)
+                    curr_map = level_map + box_placed
+                    if len(np.where(np.array(curr_map)>level_limit)[0]) > 0:
+                        mask[0,y_,x_] = 0
 
-                box_placed = np.zeros(np.shape(state[0]))
-                box_placed[max(min_x,0): max_x, max(min_y,0): max_y] = 1
+            for y_ in range(resolution):
+                for x_ in range(resolution):
+                    if mask[1,x_,y_] == 0: continue
+                    min_y, max_y = math.floor(y_-by/2), math.floor(y_+by/2)
+                    min_x, max_x = math.floor(x_-bx/2), math.floor(x_+bx/2)
 
-                curr_map = level_map + box_placed
-                if len(np.where(np.array(curr_map)>empty_level)[0]) > 0:
-                    mask[1,x_,y_] = 0
+                    box_placed = np.zeros(np.shape(state[0]))
+                    box_placed[max(min_x,0): max_x, max(min_y,0): max_y] = 1
+
+                    curr_map = level_map + box_placed
+                    if len(np.where(np.array(curr_map)>level_limit)[0]) > 0:
+                        mask[1,x_,y_] = 0
+
+            if np.sum(mask) > 0: break
 
     if np.sum(mask) == 0:
         return pre_mask
@@ -256,7 +170,6 @@ def action_projection(state, block, action, box_norm=True):
     box_level0 = np.max(level_map[max(min_y,0):max_y,max(min_x,0):max_x]) + 1
     if box_level0 > max_level:
         return [action_rot, cy, cx]
-    
 
     while True:
         proj_y = project_axis("y",

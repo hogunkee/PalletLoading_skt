@@ -7,22 +7,23 @@ from models import BinNet as FCQNet
 class DQN_Agent():
     def __init__(self, max_levels, resolution, train,
                  learning_rate=3e-4, model_path='',
-                 continue_learning=False, do_double=True):
-        self.FCQ = FCQNet(2, max_levels, resolution**2).cuda()
+                 do_double=True, use_coordnconv=False):
+        self.FCQ = FCQNet(2, max_levels, resolution**2,
+                          use_coordnconv=use_coordnconv).cuda()
 
-        if (not train) or continue_learning:
-            self.FCQ.load_state_dict(torch.load(model_path))
+        if train:
+            if do_double:
+                self.FCQ_target = FCQNet(2, max_levels, resolution**2,
+                                         use_coordnconv=use_coordnconv).cuda()
+                self.FCQ_target.load_state_dict(self.FCQ.state_dict())
+            else:
+                self.FCQ_target = None
 
-        if train and do_double:
-            self.FCQ_target = FCQNet(2, max_levels, resolution**2).cuda()
-            self.FCQ_target.load_state_dict(self.FCQ.state_dict())
-
-            self.calculate_loss = calculate_loss_double_fcdqn
             self.FCQ.train()
-
             self.optimizer = torch.optim.Adam(self.FCQ.parameters(), lr=learning_rate)
 
         else:
+            self.FCQ.load_state_dict(torch.load(model_path))
             self.FCQ.eval()
 
         model_parameters = filter(lambda p: p.requires_grad, self.FCQ.parameters())
@@ -49,9 +50,11 @@ class DQN_Agent():
         if deterministic:
             if use_mask: q_value *= q_mask
 
-            aidx_y = q_value.max(0).max(1).argmax()
-            aidx_x = q_value.max(0).max(0).argmax()
-            aidx_th = q_value.argmax(0)[aidx_y, aidx_x]
+            n_th, n_y, n_x = q_value.shape
+            aidx = np.argmax(q_value)
+            aidx_th = aidx // (n_y*n_x)
+            aidx_y = (aidx % (n_y*n_x)) // n_x
+            aidx_x = (aidx % (n_y*n_x)) % n_x
                 
         else:
             n_th, n_y, n_x = q_value.shape
@@ -79,6 +82,39 @@ class DQN_Agent():
         else:
             return action
         
+    def calculate_loss(self, minibatch, FCQ, FCQ_target, gamma=0.95):
+        state, block, next_state, next_block, next_qmask, actions, rewards, not_done = minibatch
+        state = state.type(torch.float32)
+        next_state = next_state.type(torch.float32)
+        next_qmask = next_qmask.type(torch.float32)
+        actions = actions.type(torch.long)
+
+        def get_a_prime():
+            next_q = FCQ(next_state, next_block)
+            next_q *= next_qmask
+
+            aidx_y = next_q.max(1)[0].max(2)[0].max(1)[1]
+            aidx_x = next_q.max(1)[0].max(1)[0].max(1)[1]
+            aidx_th = next_q.max(2)[0].max(2)[0].max(1)[1]
+            return aidx_th, aidx_y, aidx_x
+
+        a_prime = get_a_prime()
+
+        if FCQ_target is None:
+            next_q_target = FCQ(next_state, next_block)
+        else:
+            next_q_target = FCQ_target(next_state, next_block)
+        q_target_s_a_prime = next_q_target[torch.arange(next_q_target.shape[0]), a_prime[0], a_prime[1], a_prime[2]].unsqueeze(1)
+        y_target = rewards + gamma * not_done * q_target_s_a_prime
+
+        q_values = FCQ(state, block)
+        pred = q_values[torch.arange(q_values.shape[0]), actions[:, 0], actions[:, 1], actions[:, 2]]
+        pred = pred.view(-1, 1)
+
+        loss = criterion(y_target, pred)
+        error = torch.abs(pred - y_target)
+        return loss, error
+
 
     def update_network(self, minibatch, tau=1e-3, clip=1.0):
         loss, _ = self.calculate_loss(minibatch, self.FCQ, self.FCQ_target)
