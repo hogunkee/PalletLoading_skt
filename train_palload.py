@@ -59,6 +59,7 @@ def evaluate(
         for _ in range(env.num_steps):
             ep_len += 1
 
+            q_mask = np.ones((2,resolution,resolution))
             if use_bound_mask:
                 q_mask = generate_bound_mask(state, block)
             if use_floor_mask:
@@ -166,9 +167,9 @@ def learning(
             count_steps += 1
             ep_len += 1
 
+            q_mask = np.ones((2,resolution,resolution))
             if use_bound_mask:
                 q_mask = generate_bound_mask(state, block)
-
             if use_floor_mask:
                 q_mask = generate_floor_mask(state, block, q_mask)
 
@@ -339,7 +340,7 @@ if __name__=='__main__':
             os.environ['CUDA_VISIBLE_DEVICES'] = str(gpu)
 
     now = datetime.datetime.now()
-    savename = "FCDQN_%s" % (now.strftime("%m%d_%H%M"))
+    savename = "Baseline_%s" % (now.strftime("%m%d_%H%M"))
     if not evaluation:
         if not os.path.exists("results/config/"):
             os.makedirs("results/config/")
@@ -348,7 +349,7 @@ if __name__=='__main__':
 
     # wandb log #
     log_name = savename
-    wandb_off = True # args.wandb_off
+    wandb_off = False # args.wandb_off
     if not (evaluation or wandb_off):
         wandb.init(project="SKT Palletizing")
         wandb.run.name = log_name
