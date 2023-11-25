@@ -3,7 +3,7 @@ import time
 import math
 import numpy as np
 import matplotlib
-#matplotlib.use('TkAgg')
+matplotlib.use('TkAgg')
 from matplotlib import pyplot as plt
 
 from utils import get_block_bound
@@ -533,7 +533,7 @@ class FloorN(PalletLoadingSim):
             next_blocks = self.block_que
             self.renderer.render_current_state(self.state, next_blocks, previous_state,
                                                self.q_value, box=next_block_bound)
-        pose_ = [(min_y+max_y)/2/self.resolution, (min_x+max_x)/2/self.resolution, (box_level-1)*self.box_height+0.01]
+        pose_ = [(min_y+max_y)/2/self.resolution, (min_x+max_x)/2/self.resolution, (box_level-1)*self.box_height]
         scale_ = [self.next_block[0], self.next_block[1], self.box_height]
 
         self.stacked_history["pose_list"].append(pose_)

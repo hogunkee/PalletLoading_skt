@@ -115,7 +115,6 @@ def learning(
         log_freq=1e3,
         tau=1e-3,
         double=True,
-        continue_learning=False,
         model_path='',
         wandb_off=False,
         show_q=False,
@@ -194,7 +193,7 @@ def learning(
                 next_q_mask = generate_floor_mask(next_state, next_block, next_q_mask)
 
             ## save transition to the replay buffer ##
-            trajectory = deepcopy([state, block, action, next_state, next_block, reward, done])
+            trajectory = deepcopy([state, block, action, next_state, next_block, next_q_mask, reward, done])
             trajectories.append(trajectory)
 
             state, block = next_state, next_block

@@ -213,10 +213,10 @@ def recalculate_rewards(trajectories, terminal_reward, T, gamma=0.5):
 
     new_trajectories = []
     for traj in trajectories:
-        state, block, action, next_state, next_block, reward, done = traj
+        state, block, action, next_state, next_block, next_q_mask, reward, done = traj
         new_reward = reward + A
 
-        new_traj = deepcopy([state, block, action, next_state, next_block, new_reward, done])
+        new_traj = deepcopy([state, block, action, next_state, next_block, next_q_mask, new_reward, done])
         new_trajectories.append(new_traj)
 
         A *= gamma
