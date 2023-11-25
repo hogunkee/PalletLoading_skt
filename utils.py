@@ -221,3 +221,14 @@ def recalculate_rewards(trajectories, terminal_reward, T, gamma=0.5):
 
         A *= gamma
     return new_trajectories
+
+def combine_batch(batch1, batch2):
+    try:
+        combined = []
+        for i in range(len(batch1)):
+            combined.append(torch.cat([batch1[i], batch2[i]]))
+    except:
+        print(i)
+        print(batch1[i].shape)
+        print(batch2[i].shape)
+    return combined
