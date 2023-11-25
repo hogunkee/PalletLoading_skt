@@ -16,7 +16,7 @@ print(len(solutions))
 
 max_levels = 1
 resolution = 10
-buff_size = 1e5
+buff_size = 2e5
 reward_type = 'dense'
 env = FloorEnv(
         resolution=resolution,
