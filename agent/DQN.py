@@ -61,6 +61,8 @@ class DQN_Agent():
 
             if use_mask:
                 q_masked = q_value*q_mask
+            else:
+                q_masked = q_value
 
             soft_tmp = 1e0 # 3e-1 # 1e-1
             q_probs = q_masked.reshape((-1,))
