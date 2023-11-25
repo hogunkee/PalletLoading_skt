@@ -40,9 +40,9 @@ for solution in solutions:
     env.q_value = None
     for bsize, bpose in solution:
         # flip the block
-        w, h = bsize
+        h, w = bsize
         x, y = bpose
-        env.next_block = (h / resolution - 0.01, w / resolution - 0.01, 0.156)
+        env.next_block = (w / resolution - 0.01, h / resolution - 0.01, 0.156)
         center = np.array([y + np.ceil(h/2), x + np.ceil(w/2)])
         action = [1, center[0], center[1]]
         env.step(action)
