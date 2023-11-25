@@ -434,6 +434,10 @@ class Floor1(PalletLoadingSim):
 
         reward, episode_end = self.reward_fuc.get_2d_reward(previous_state, next_block_bound)
 
+        # success
+        if self.state.max()==1 and self.state.min()==1:
+            episode_end = True
+
         self.next_block = self.get_next_block()
         if self.box_norm:
             next_block = np.copy(self.next_block)
