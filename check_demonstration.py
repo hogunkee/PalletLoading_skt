@@ -2,7 +2,7 @@ import pickle
 import numpy as np
 from matplotlib import pyplot as plt
 
-filename = 'solution_3.pkl'
+filename = 'results/demo/solution_3.pkl'
 with open(filename, 'rb') as f:
     solutions = pickle.load(f)
     # solutions in [(box_size, box_pose_lefttop)] format

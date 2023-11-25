@@ -7,7 +7,7 @@ from utils import get_block_bound
 from replay_buffer import ReplayBuffer
 from environment.environment import Floor1 as FloorEnv
 
-filename = 'solution_3.pkl'
+filename = 'results/demo/solution_3.pkl'
 with open(filename, 'rb') as f:
     solutions = pickle.load(f)
     # solutions in [(box_size, box_pose_lefttop)] format
@@ -76,8 +76,8 @@ for solution in solutions:
             print('size of replay: %d' %replay_buffer.size, end='\r')
 
 print()
-num_pkl = len([pk for pk in os.listdir() if pk.startswith('replay_') and pk.endswith('.pkl')])
-savename = "replay_%d.pkl" %num_pkl
+num_pkl = len([pk for pk in os.listdir('results/replay/') if pk.startswith('replay_') and pk.endswith('.pkl')])
+savename = "results/replay/replay_%d.pkl" %num_pkl
 with open(savename, "wb") as f:
     pickle.dump(replay_buffer, f)
 print('replay data saved at %s' %savename)

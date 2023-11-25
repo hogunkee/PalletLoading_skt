@@ -114,8 +114,8 @@ if __name__=='__main__':
     #from pprint import pprint
     #pprint(global_solutions)
 
-    num_pkl = len([pk for pk in os.listdir() if pk.startswith('solution') and pk.endswith('.pkl')])
-    savename = "solution_%d.pkl" %num_pkl
+    num_pkl = len([pk for pk in os.listdir('results/demo/') if pk.startswith('solution') and pk.endswith('.pkl')])
+    savename = "results/demo/solution_%d.pkl" %num_pkl
     with open(savename, "wb") as f:
         pickle.dump(global_solutions, f)
     print('solutions saved at %s' %savename)
