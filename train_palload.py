@@ -324,9 +324,9 @@ if __name__=='__main__':
     show_q = True #args.show_q
 
     # heuristics #
-    use_bound_mask = True
-    use_floor_mask = True
-    use_projection = True
+    use_bound_mask = False #True
+    use_floor_mask = False #True
+    use_projection = False #True
     use_coordnconv = True
     use_terminal_reward = False
 
