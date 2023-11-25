@@ -286,7 +286,7 @@ class PalletLoadingSim(object):
         self.block_size_max = block_size_max
         self.use_discrete_block = discrete_block
 
-        self.box_height = 0.15
+        self.box_height = 0.156
         self.q_value = None
         self.block_que = []
         self.max_levels = max_levels
@@ -308,7 +308,7 @@ class PalletLoadingSim(object):
 
         if self.render:
             next_blocks = [self.next_block] + self.block_que[:-1]
-            self.renderer.render_current_state(self.state, next_blocks, self.state.q_value)
+            self.renderer.render_current_state(self.state, next_blocks, self.state, self.q_value)
         
         if self.box_norm:
             next_block = np.copy(self.next_block)
@@ -400,7 +400,7 @@ class Floor1(PalletLoadingSim):
             next_block = np.round(np.array(self.next_block) * self.resolution).astype(int)
         
         action_rot = action[0]
-        cy, cx = action_pos        
+        cy, cx = np.array(action[1:])
 
         if action_rot==0:
             by, bx, _ = next_block
