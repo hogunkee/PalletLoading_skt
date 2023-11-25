@@ -31,11 +31,12 @@ def evaluate(
         use_projection=False,
         use_coordnconv=False,
         use_terminal_reward=False,
+        use_resnet=False,
         print_info=False,
     ):
     if agent is None:
-        agent = Agent(max_levels, resolution, train=False,
-                      model_path=model_path, use_coordnconv=use_coordnconv)
+        agent = Agent(max_levels, resolution, train=False, model_path=model_path, 
+                      use_coordnconv=use_coordnconv, use_resnet=use_resnet)
 
     log_returns = []
     log_eplen = []
@@ -127,9 +128,10 @@ def learning(
         use_projection=False,
         use_coordnconv=False,
         use_terminal_reward=False,
+        use_resnet=False,
     ):
-    agent = Agent(max_levels, resolution, True,
-                  learning_rate, model_path, double, use_coordnconv)
+    agent = Agent(max_levels, resolution, True, learning_rate, 
+                  model_path, double, use_coordnconv, use_resnet=use_resnet)
 
     replay_buffer = ReplayBuffer([max_levels, resolution, resolution], 2, dim_action=3, max_size=int(buff_size))
 
@@ -338,6 +340,7 @@ if __name__=='__main__':
     use_projection = False #True
     use_coordnconv = True
     use_terminal_reward = False
+    use_resnet = True
 
     gpu = args.gpu
     if "CUDA_VISIBLE_DEVICES" in os.environ:
@@ -401,7 +404,8 @@ if __name__=='__main__':
         evaluate(env=env, model_path=model_path, num_trials=num_trials,
                  show_q=show_q, resolution=resolution, max_levels=max_levels, print_info=True,
                  use_bound_mask=use_bound_mask, use_floor_mask=use_floor_mask,
-                 use_projection=use_projection, use_coordnconv=use_coordnconv)
+                 use_projection=use_projection, use_coordnconv=use_coordnconv,
+                 use_resnet=use_resnet)
     else:
         learning(env=env, savename=savename, learning_rate=learning_rate, 
                  batch_size=batch_size, buff_size=buff_size,
@@ -410,4 +414,4 @@ if __name__=='__main__':
                  show_q=show_q, resolution=resolution, max_levels=max_levels,
                  use_bound_mask=use_bound_mask, use_floor_mask=use_floor_mask,
                  use_projection=use_projection, use_coordnconv=use_coordnconv,
-                 use_terminal_reward=use_terminal_reward)
+                 use_terminal_reward=use_terminal_reward, use_resnet=use_resnet)

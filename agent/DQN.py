@@ -1,20 +1,27 @@
 import torch
 from utils import *
 
-from models import BinNet as FCQNet
-
 
 class DQN_Agent():
     def __init__(self, max_levels, resolution, train,
                  learning_rate=3e-4, model_path='',
-                 do_double=True, use_coordnconv=False):
-        self.FCQ = FCQNet(2, max_levels, resolution**2,
-                          use_coordnconv=use_coordnconv).cuda()
+                 do_double=True, use_coordnconv=False,
+                 use_resnet=False):
+        if use_resnet:
+            from models_resnet import FCQResNet as FCQNet
+            self.FCQ = FCQNet(2, max_levels)
+        else:
+            from models import BinNet as FCQNet
+            self.FCQ = FCQNet(2, max_levels, resolution**2,
+                              use_coordnconv=use_coordnconv).cuda()
 
         if train:
             if do_double:
-                self.FCQ_target = FCQNet(2, max_levels, resolution**2,
-                                         use_coordnconv=use_coordnconv).cuda()
+                if use_resnet:
+                    self.FCQ_target = FCQNet(2, max_levels)
+                else:
+                    self.FCQ_target = FCQNet(2, max_levels, resolution**2,
+                                             use_coordnconv=use_coordnconv).cuda()
                 self.FCQ_target.load_state_dict(self.FCQ.state_dict())
             else:
                 self.FCQ_target = None
