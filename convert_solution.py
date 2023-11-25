@@ -29,10 +29,11 @@ for solution in solutions:
     env.reset()
     env.q_value = None
 
-    for bsize, bpose_lefttop in solution:
-        env.next_block = bsize / resolution - 0.01
+    for bsize, bpose in solution:
+        #env.next_block = np.array(bsize) / resolution - 0.01
         h, w = bsize
         x, y = bpose
+        env.next_block = (h / resolution - 0.01, w / resolution - 0.01, 0.156)
         center = np.array([y + np.ceil(h/2), x + np.ceil(w/2)])
         action = [0, center[0], center[1]]
         env.step(action)
