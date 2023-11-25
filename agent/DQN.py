@@ -9,7 +9,7 @@ class DQN_Agent():
                  use_resnet=False):
         if use_resnet:
             from models_resnet import FCQResNet as FCQNet
-            self.FCQ = FCQNet(2, max_levels)
+            self.FCQ = FCQNet(2, max_levels).cuda()
         else:
             from models import BinNet as FCQNet
             self.FCQ = FCQNet(2, max_levels, resolution**2,
@@ -18,7 +18,7 @@ class DQN_Agent():
         if train:
             if do_double:
                 if use_resnet:
-                    self.FCQ_target = FCQNet(2, max_levels)
+                    self.FCQ_target = FCQNet(2, max_levels).cuda()
                 else:
                     self.FCQ_target = FCQNet(2, max_levels, resolution**2,
                                              use_coordnconv=use_coordnconv).cuda()
