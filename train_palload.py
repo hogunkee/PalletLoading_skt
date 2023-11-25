@@ -290,7 +290,7 @@ if __name__=='__main__':
     parser.add_argument("--max_steps", default=50, type=int)
     parser.add_argument("--resolution", default=10, type=int)
     parser.add_argument("--reward", default='dense', type=str)
-    parser.add_argument("--max_levels", default=3, type=int)
+    parser.add_argument("--max_levels", default=1, type=int)
     ## learning ##
     parser.add_argument("--algorithm", default='DQN', type=str)
     parser.add_argument("--lr", default=1e-4, type=float)
