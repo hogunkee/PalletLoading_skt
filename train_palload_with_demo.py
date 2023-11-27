@@ -129,6 +129,7 @@ def learning(
         use_coordnconv=False,
         use_terminal_reward=False,
         use_resnet=False,
+        demo_ratio=0.5,
     ):
     agent = Agent(max_levels, resolution, True, learning_rate, 
                   model_path, double, use_coordnconv, use_resnet=use_resnet)
@@ -210,8 +211,8 @@ def learning(
                 if done: break
                 else: continue
 
-            minibatch_replay = replay_buffer.sample(batch_size//2)
-            minibatch_demo = replay_buffer.sample(batch_size//2)
+            minibatch_replay = replay_buffer.sample(batch_size-int(batch_size*demo_ratio))
+            minibatch_demo = replay_buffer.sample(int(batch_size*demo_ratio))
             minibatch = combine_batch(minibatch_replay, minibatch_demo)
 
             loss = agent.update_network(minibatch, tau)
@@ -310,6 +311,7 @@ if __name__=='__main__':
     parser.add_argument("--learn_start", default=1000, type=float)
     parser.add_argument("--log_freq", default=250, type=int)
     parser.add_argument("--double", action="store_false") # default: True
+    parser.add_argument("--demo_ratio", default=0.9, type=float)
     ## Evaluate ##
     parser.add_argument("--evaluate", action="store_true")
     parser.add_argument("--model_path", default="####_####", type=str)
@@ -392,6 +394,7 @@ if __name__=='__main__':
     learn_start = int(args.learn_start)
     log_freq = args.log_freq
     double = args.double
+    demo_ratio = args.demo_ratio
 
     if args.algorithm == "DQN":
         from agent.DQN import DQN_Agent as Agent
@@ -414,4 +417,5 @@ if __name__=='__main__':
                  show_q=show_q, resolution=resolution, max_levels=max_levels,
                  use_bound_mask=use_bound_mask, use_floor_mask=use_floor_mask,
                  use_projection=use_projection, use_coordnconv=use_coordnconv,
-                 use_terminal_reward=use_terminal_reward, use_resnet=use_resnet)
+                 use_terminal_reward=use_terminal_reward, use_resnet=use_resnet,
+                 demo_ratio=demo_ratio)
