@@ -48,6 +48,7 @@ class Demonstration(object):
 
     def divide_pallet(self, num_solutions):
         resolution = self.resolution
+        possible_boxes = self.possible_boxes
         pallet = np.zeros([resolution, resolution])
 
         sol = []
