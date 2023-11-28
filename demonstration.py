@@ -110,6 +110,7 @@ class DemoConverter(object):
     def load_solutions(self, file_path):
         with open(file_path, 'rb') as f:
             solutions = pickle.load(f)
+        return solutions
 
     def convert_solutions(self, solutions):
         resolution = self.resolution
@@ -149,13 +150,13 @@ class DemoConverter(object):
                 for i in range(len(trajectories)):
                     state, block, action, next_state, reward, done = trajectories[i]
                     if done:
-                        next_block = env.make_new_block()[:2]
+                        next_block = self.env.make_new_block()[:2]
                     else:
                         next_block = trajectories[i + 1][1]
                     next_q_mask = np.ones((2, resolution, resolution))
 
                     self.replay_buffer.add(state, block, action, next_state, next_block, next_q_mask, reward, done)
-                    print('size of replay: %d' %replay_buffer.size, end='\r')
+                    print('size of replay: %d' %self.replay_buffer.size, end='\r')
         print('conversion done.')
 
     def save_replay(self, save_dir='results/replay/'):
@@ -178,10 +179,8 @@ if __name__=='__main__':
 
     num_solutions = 10000
     st = time.time()
-
     Demo = Demonstration(resolution=10)
     solutions = Demo.find_solutions(num_solutions)
-
     et = time.time()
     print(et - st, 'seconds.')
 

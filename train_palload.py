@@ -304,8 +304,8 @@ if __name__=='__main__':
     parser.add_argument("--double", action="store_false") # default: True
     ## Evaluate ##
     parser.add_argument("--evaluate", action="store_true")
-    parser.add_argument("--model_path", default="####_####", type=str)
-    parser.add_argument("--num_trials", default=25, type=int)
+    parser.add_argument("--model_path", default="1126_0628", type=str)
+    parser.add_argument("--num_trials", default=100, type=int)
     # etc #
     parser.add_argument("--show_q", action="store_true")
     parser.add_argument("--gpu", default=-1, type=int)
@@ -321,8 +321,8 @@ if __name__=='__main__':
     max_levels = args.max_levels
 
     # evaluate configuration #
-    evaluation = False # True False #args.evaluate
-    model_path = os.path.join("results/models/FCDQN_%s.pth"%args.model_path)
+    evaluation = False #args.evaluate
+    model_path = os.path.join("results/models/Baseline_%s.pth"%args.model_path)
     num_trials = args.num_trials
     show_q = True #args.show_q
 
@@ -332,7 +332,7 @@ if __name__=='__main__':
     use_projection = False #True
     use_coordnconv = True
     use_terminal_reward = False
-    use_resnet = True 
+    use_resnet =  False
 
     gpu = args.gpu
     if "CUDA_VISIBLE_DEVICES" in os.environ:
