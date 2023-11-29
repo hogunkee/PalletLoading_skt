@@ -46,7 +46,7 @@ def generate_floor_mask(state, block, pre_mask=None):
     cum_state = generate_cumulative_state(state)
     level_map = np.sum(cum_state, axis=0)
 
-    min_packed_ratio, empty_level = 0.80, -1
+    min_packed_ratio, empty_level = 0.75, -1
     for i in range(0,max_level-1):
         if np.mean(cum_state[i]) < min_packed_ratio:
             empty_level = i+1
@@ -205,3 +205,12 @@ def project_axis(axis, min_y, max_y, min_x, max_x, level_map, box_level0):
         proj_ += 1
     if proj_ > 0: proj_ -= 1
     return proj_
+
+
+def freeze(net):
+    for p in net.parameters():
+        p.requires_grad_(False)
+
+def unfreeze(net):
+    for p in net.parameters():
+        p.requires_grad_(True)

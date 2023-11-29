@@ -6,7 +6,6 @@ import json
 
 import torch
 from utils import *
-from replay_buffer import ReplayBuffer
 
 
 import warnings
@@ -20,34 +19,26 @@ def evaluate(
         env,
         agent=None,
         model_path='',
-        num_trials=10,
-        show_q=False,
-        resolution=20,
-        max_levels=1,
+        config=None,
         use_bound_mask=False,
         use_floor_mask=False,
         use_projection=False,
         use_coordnconv=False,
-        print_info=False,
+        print_result=False,
     ):
     if agent is None:
-        agent = Agent(max_levels, resolution, train=False,
-                      model_path=model_path, use_coordnconv=use_coordnconv)
+        agent = Agent(False, model_path, use_coordnconv, config)
 
     log_returns = []
     log_eplen = []
     log_pf = []
 
-    for ne in range(num_trials):
+    for ne in range(int(config.num_trials)):
         ep_len = 0
         episode_reward = 0.
 
-        q_mask = None
-
-        if use_projection:
-            p_projection = 1.000
-        else:
-            p_projection = 0.000
+        if use_projection: p_projection = 1.00
+        else: p_projection = 0.00
 
         obs = env.reset()
         state, block = obs
@@ -57,17 +48,17 @@ def evaluate(
         for _ in range(env.num_steps):
             ep_len += 1
 
+            q_mask = np.ones((2,resolution,resolution))
             if use_bound_mask:
                 q_mask = generate_bound_mask(state, block)
             if use_floor_mask:
                 q_mask = generate_floor_mask(state, block, q_mask)
 
-            action, q_map = agent.get_action(state, block,
-                                             with_q=True, deterministic=True,
-                                             q_mask=q_mask, p_project=p_projection)
-
-            if show_q:
-                env.q_value = q_map
+            action, action_info = agent.get_action(state, block, q_mask,
+                                                   with_q=config.show_q,
+                                                   deterministic=True,
+                                                   p_project=p_projection)
+            if config.show_q: env.q_value = action_info
 
             obs, reward, done = env.step(action)
 
@@ -75,7 +66,6 @@ def evaluate(
             if len(state.shape)==2:
                 state = state[np.newaxis, :, :]
             episode_reward += reward
-
             if done: break
 
         packing_factor = state.sum() / np.ones_like(state).sum()
@@ -83,12 +73,12 @@ def evaluate(
         log_eplen.append(ep_len)
         log_pf.append(packing_factor)
 
-        if print_info:
+        if print_result:
             print("EP{}".format(ne+1), end=" / ")
             print("Current: R{:.2f}, B{:.2f}, P{:.3f}".format(log_returns[-1],log_eplen[-1],log_pf[-1]), end=" / ")
             print("Mean: R{:.2f}, B{:.2f}, P{:.3f}".format(np.mean(log_returns),np.mean(log_eplen),np.mean(log_pf)))
 
-    if print_info:
+    if print_result:
         print()
         print("="*80)
         print("Evaluation Done.")
@@ -100,77 +90,76 @@ def evaluate(
 
 def learning(
         env,
-        savename,
-        learning_rate=3e-4, 
-        batch_size=64, 
-        buff_size=1e4, 
-        total_episodes=1e6,
-        learn_start=1e4,
-        log_freq=1e3,
-        tau=1e-3,
-        double=True,
-        model_path='',
-        wandb_off=False,
-        show_q=False,
-        resolution=20,
-        max_levels=1,
+        save_name,
+        model_path="",
+        learning_type="",
+        config=None,
         use_bound_mask=False,
         use_floor_mask=False,
         use_projection=False,
         use_coordnconv=False,
     ):
-    agent = Agent(max_levels, resolution, True,
-                  learning_rate, model_path, double, use_coordnconv)
+    agent = Agent(True, model_path, use_coordnconv, config)
 
-    replay_buffer = ReplayBuffer([max_levels, resolution, resolution], 2, dim_action=3, max_size=int(buff_size))
+    if learning_type == "off_policy":
+        from replay_buffer import OffReplayBuffer as ReplayBuffer
+        replay_buffer = ReplayBuffer(
+            [config.max_levels, config.resolution, config.resolution],
+            2, dim_action=3, max_size=int(config.buff_size)
+        )
+    elif learning_type == "on_policy":
+        from replay_buffer import OnReplayBuffer as ReplayBuffer
+        replay_buffer = ReplayBuffer(
+            dimS=[config.max_levels, config.resolution, config.resolution],
+            dimA=3, gamma=config.gamma, lam=config.lam, lim=int(config.buff_size)
+        )
 
-    log_returns, log_loss, log_eplen, log_test_len, log_test_pf, log_step = [], [], [], [], [], []
+    log_train_returns, log_train_loss, log_train_len, log_train_pf = [], [], [], []
+    log_test_len, log_test_pf, log_test_step = [], [], []
 
     if not os.path.exists("results/models/"):
         os.makedirs("results/models/")
     if not os.path.exists("results/board/"):
         os.makedirs("results/board/")
 
-
     st = time.time()
 
     max_return = -1e7
     count_steps = 0
 
-    for ne in range(total_episodes):
+    for ne in range(int(config.total_episodes)):
         ep_len = 0
         episode_reward = 0.
         log_minibatchloss = []
 
-        q_mask = None
-
-        if use_projection:
-            p_projection = 0.700
-        else:
-            p_projection = 0.000
+        if use_projection: p_projection = 0.70
+        else: p_projection = 0.00
 
         obs = env.reset()
         state, block = obs
         if len(state.shape)==2:
             state = state[np.newaxis, :, :]
 
-        for _ in range(env.num_steps):
+        for t in range(env.num_steps):
             count_steps += 1
             ep_len += 1
 
+            q_mask = np.ones((2,resolution,resolution))
             if use_bound_mask:
                 q_mask = generate_bound_mask(state, block)
-
             if use_floor_mask:
                 q_mask = generate_floor_mask(state, block, q_mask)
 
-            action, q_map = agent.get_action(state, block,
-                                             with_q=True, deterministic=False,
-                                             q_mask=q_mask, p_project=p_projection)
+            action, action_info = agent.get_action(state, block, q_mask,
+                                                   with_q=config.show_q,
+                                                   deterministic=False,
+                                                   p_project=p_projection)
+            if learning_type == "off_policy":
+                q_map = action_info
+                if config.show_q: env.q_value = q_map
+            elif learning_type == "on_policy":
+                action_probs, state_value = action_info
             
-            if show_q:
-                env.q_value = q_map
-
             obs, reward, done = env.step(action)
 
             next_state, next_block = obs
@@ -184,49 +173,76 @@ def learning(
             if use_floor_mask:
                 next_q_mask = generate_floor_mask(next_state, next_block, next_q_mask)
 
-            ## save transition to the replay buffer ##
-            replay_buffer.add(state, block, action, next_state, next_block, next_q_mask, reward, done)
+            if learning_type == "off_policy":
+                replay_buffer.add(state, block, q_mask, action, next_state, next_block, next_q_mask, reward, done)
 
+                minibatch = replay_buffer.sample(int(config.batch_size))
+                loss = agent.update_network(minibatch)
+                log_minibatchloss.append(loss)
+
+            elif learning_type == "on_policy":
+                replay_buffer.add(state, block, action, reward, state_value, action_probs, q_mask)
+    
+                if (t == env.num_steps-1 or replay_buffer._size == int(config.buff_size)):
+                    v_last = agent.get_statevalue(next_state, next_block, next_q_mask)
+                    replay_buffer.compute_values(v_last)
+                elif done:
+                    v_last = torch.zeros([2, resolution, resolution]).cuda()
+                    replay_buffer.compute_values(v_last)
+
+                if replay_buffer._size == int(config.buff_size):
+                    fullbatch = replay_buffer.load()
+                    loss = agent.update_network(fullbatch)
+                    log_minibatchloss.append(loss)
+                    replay_buffer.reset()
+                    break
+            
             state, block = next_state, next_block
-
-            if replay_buffer.size < learn_start:
-                if done: break
-                else: continue
-
-            minibatch = replay_buffer.sample(batch_size)
-            loss = agent.update_network(minibatch, tau)
-            log_minibatchloss.append(loss)
-
             if done: break
 
-        if replay_buffer.size <= learn_start:
-            continue
+        ep_pf = np.sum(next_state) / np.sum(np.ones_like(next_state))
 
-        log_returns.append(episode_reward)
-        log_loss.append(np.mean(log_minibatchloss))
-        log_eplen.append(ep_len)
+        ep_loss = 0.0
+        if len(log_minibatchloss) > 0:
+            ep_loss = np.mean(log_minibatchloss)
+        elif len(log_train_loss) > 0:
+            ep_loss = log_train_loss[-1]
+
+        log_train_returns.append(episode_reward)
+        log_train_loss.append(ep_loss)
+        log_train_len.append(ep_len)
+        log_train_pf.append(ep_pf)
 
         eplog = {
             'Reward': episode_reward,
-            'loss': np.mean(log_minibatchloss),
+            'loss': ep_loss,
             'EP Len': ep_len,
         }
         if not wandb_off:
             wandb.log(eplog, count_steps)
 
-        if ne % log_freq == 0:
+        print_log = False
+        if learning_type == "off_policy":
+            print_log = ne % config.log_freq == 0 and ne > 0
+        elif learning_type == "on_policy":
+            #print_log = replay_buffer._size == 0
+            log_interval = max(int(config.buff_size), 2000)
+            print_log = count_steps % int(log_interval) == 0
+
+        if print_log:
             agent.train_on_off(train=False)
-            test_len, test_pf = evaluate(env=env, agent=agent, num_trials=25,
-                                         show_q=show_q, resolution=resolution, max_levels=max_levels,
-                                         use_bound_mask=use_bound_mask, use_floor_mask=use_floor_mask, use_projection=True)
+            test_len, test_pf = evaluate(env=env, agent=agent, config=config,
+                                         use_bound_mask=use_bound_mask, use_floor_mask=use_floor_mask,
+                                         use_projection=use_projection, use_coordnconv=use_coordnconv)
             
             log_test_len.append(test_len)
             log_test_pf.append(test_pf)
-            log_step.append(count_steps)
+            log_test_step.append(count_steps)
 
-            log_mean_returns = smoothing_log(log_returns, log_freq)
-            log_mean_loss = smoothing_log(log_loss, log_freq)
-            log_mean_eplen = smoothing_log(log_eplen, log_freq)
+            log_mean_returns = smoothing_log(log_train_returns, config.log_freq)
+            log_mean_loss = smoothing_log(log_train_loss, config.log_freq)
+            log_mean_eplen = smoothing_log(log_train_len, config.log_freq)
+            log_mean_eppf = smoothing_log(log_train_pf, config.log_freq)
 
             et = time.time()
             now = datetime.datetime.now().strftime("%m/%d %H:%M")
@@ -235,27 +251,28 @@ def learning(
             print(f"{now}({interval}) / ep{ne} ({count_steps} steps)", end=" / ")
             print("Reward:{0:.2f}".format(log_mean_returns[-1]), end="")
             print(" / Loss:{0:.3f}".format(log_mean_loss[-1]), end="")
-            print(" / Train:{0:.1f}".format(log_mean_eplen[-1]), end="")
+            print(" / Train:({:.1f}/{:.1f}%)".format(log_mean_eplen[-1],log_mean_eppf[-1]*100.0), end="")
             print(" / Test:({:.1f}/{:.1f}%)".format(test_len,test_pf*100.0), end="")
 
             log_list = [
-                log_returns,  # 0
-                log_loss,  # 1
-                log_eplen,  # 2
+                log_train_returns,
+                log_train_len,
+                log_train_pf,
+                log_train_loss,
                 log_test_len, 
                 log_test_pf, 
-                log_step, 
+                log_test_step, 
             ]
             numpy_log = np.array(log_list, dtype=object)
-            np.save('results/board/%s' %savename, numpy_log)
+            np.save('results/board/%s' %save_name, numpy_log)
 
             if test_pf > max_return:
                 max_return = test_pf
-                torch.save(agent.FCQ.state_dict(), 'results/models/%s.pth' % savename)
-                print(" <- Highest Return. Saving the model.")
-            else:
-                torch.save(agent.FCQ.state_dict(), 'results/models/%s_last.pth' % savename)
-                print("")
+                agent.save_network(save_name, "best")
+                print(" <- Highest Return. Saving the model.", end="")
+            
+            agent.save_network(save_name, "last")
+            print("")
 
             agent.train_on_off(train=True)
 
@@ -264,27 +281,37 @@ def learning(
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
-    ## env ##
+    ## Env ##
     parser.add_argument("--render", action="store_true")
     parser.add_argument("--discrete", action="store_true")
     parser.add_argument("--max_steps", default=50, type=int)
     parser.add_argument("--resolution", default=10, type=int)
     parser.add_argument("--reward", default='dense', type=str)
     parser.add_argument("--max_levels", default=3, type=int)
-    ## learning ##
-    parser.add_argument("--algorithm", default='DQN', type=str)
-    parser.add_argument("--lr", default=1e-4, type=float)
-    parser.add_argument("--bs", default=256, type=int)
+    ## Learning ##
+    parser.add_argument("--algorithm", default='D-TAC', type=str, help='[DQN, D-PPO, D-TAC]')
+    parser.add_argument("--learning_rate", default=3e-4, type=float)
+    parser.add_argument("--batch_size", default=256, type=int)
     parser.add_argument("--buff_size", default=1e5, type=float)
+    parser.add_argument("--tau", default=1e-3, type=float)
+    parser.add_argument("--grad_clip", default=1e0, type=float)
     parser.add_argument("--total_episodes", default=5e5, type=float)
-    parser.add_argument("--learn_start", default=0, type=float)
     parser.add_argument("--log_freq", default=250, type=int)
-    parser.add_argument("--double", action="store_false") # default: True
+    ## For DQN ##
+    parser.add_argument("--do_double", action="store_false") # default: True
+    ## For Discrete-PPO ##
+    parser.add_argument("--gamma", default=0.99, type=float)
+    parser.add_argument("--lam", default=0.95, type=float)
+    parser.add_argument("--epsilon", default=0.2, type=float)
+    parser.add_argument("--num_updates", default=1, type=int)
+    ## For Discrete-TAC ##
+    parser.add_argument("--q_prime", default=1.20, type=float)
+    parser.add_argument("--target_entropy_ratio", default=0.98, type=float)
     ## Evaluate ##
     parser.add_argument("--evaluate", action="store_true")
-    parser.add_argument("--model_path", default="####_####", type=str)
+    parser.add_argument("--model_path", default="", type=str)
     parser.add_argument("--num_trials", default=25, type=int)
-    # etc #
+    ## ETC ##
     parser.add_argument("--show_q", action="store_true")
     parser.add_argument("--gpu", default=-1, type=int)
     parser.add_argument("--wandb_off", action="store_true")
@@ -300,7 +327,6 @@ if __name__=='__main__':
 
     # evaluate configuration #
     evaluation = False # True False #args.evaluate
-    model_path = os.path.join("results/models/FCDQN_%s.pth"%args.model_path)
     num_trials = args.num_trials
     show_q = False #args.show_q
 
@@ -317,23 +343,6 @@ if __name__=='__main__':
             gpu_idx = visible_gpus.index(str(gpu))
             torch.cuda.set_device(gpu_idx)
             os.environ['CUDA_VISIBLE_DEVICES'] = str(gpu)
-
-    now = datetime.datetime.now()
-    savename = "FCDQN_%s" % (now.strftime("%m%d_%H%M"))
-    if not evaluation:
-        if not os.path.exists("results/config/"):
-            os.makedirs("results/config/")
-        with open("results/config/%s.json" % savename, 'w') as cf:
-            json.dump(args.__dict__, cf, indent=2)
-
-    # wandb log #
-    log_name = savename
-    wandb_off = True # args.wandb_off
-    if not (evaluation or wandb_off):
-        wandb.init(project="SKT Palletizing")
-        wandb.run.name = log_name
-        wandb.config.update(args)
-        wandb.run.save()
 
     if max_levels == 1:
         from environment.environment import Floor1 as FloorEnv
@@ -352,32 +361,54 @@ if __name__=='__main__':
         reward_type=reward_type
     )
 
-    # learning configuration #
-    learning_rate = args.lr
-    batch_size = args.bs 
-    buff_size = int(args.buff_size)
-    total_episodes = int(args.total_episodes)
-    learn_start = int(args.learn_start)
-    log_freq = args.log_freq
-    double = args.double
+    now = datetime.datetime.now()
 
     if args.algorithm == "DQN":
         from agent.DQN import DQN_Agent as Agent
-    elif args.algorithm == "Discrete-PPO":
-        raise NotImplementedError
-    elif args.algorithm == "Discrete-SAC":
-        raise NotImplementedError
+        learning_type = "off_policy"
+        model_path = os.path.join("results/models/DQN_%s.pth"%args.model_path)
+        save_name = "DQN_%s" % (now.strftime("%m%d_%H%M"))
+
+    elif args.algorithm == "D-PPO":
+        from agent.D_PPO import DiscretePPO_Agent as Agent
+        learning_type = "on_policy"
+        args.show_q = False
+        model_path = [
+            os.path.join("results/models/DPPO_%s_critic.pth"%args.model_path),
+            os.path.join("results/models/DPPO_%s_actor.pth"%args.model_path),
+        ]
+        save_name = "DPPO_%s" % (now.strftime("%m%d_%H%M"))
+
+    elif args.algorithm == "D-TAC":
+        from agent.D_TAC import DiscreteTAC_Agent as Agent
+        learning_type = "off_policy"
+        model_path = [
+            os.path.join("results/models/DTAC_%s_critic.pth"%args.model_path),
+            os.path.join("results/models/DTAC_%s_actor.pth"%args.model_path),
+        ]
+        save_name = "DTAC_%s" % (now.strftime("%m%d_%H%M"))
+    
+
+    if not evaluation:
+        if not os.path.exists("results/config/"):
+            os.makedirs("results/config/")
+        with open("results/config/%s.json" % save_name, 'w') as cf:
+            json.dump(args.__dict__, cf, indent=2)
+
+    # wandb log #
+    wandb_off = True # args.wandb_off
+    if not (evaluation or wandb_off):
+        wandb.init(project="SKT Palletizing")
+        wandb.run.name = save_name
+        wandb.config.update(args)
+        wandb.run.save()
     
     if evaluation:
-        evaluate(env=env, model_path=model_path, num_trials=num_trials,
-                 show_q=show_q, resolution=resolution, max_levels=max_levels, print_info=True,
+        evaluate(env=env, model_path=model_path, config=args, print_result=True,
                  use_bound_mask=use_bound_mask, use_floor_mask=use_floor_mask,
                  use_projection=use_projection, use_coordnconv=use_coordnconv)
     else:
-        learning(env=env, savename=savename, learning_rate=learning_rate, 
-                 batch_size=batch_size, buff_size=buff_size,
-                 total_episodes=total_episodes, learn_start=learn_start, log_freq=log_freq, 
-                 double=double, model_path=model_path, 
-                 wandb_off=wandb_off, show_q=show_q, resolution=resolution, max_levels=max_levels,
+        learning(env=env, save_name=save_name, model_path=model_path,
+                 learning_type=learning_type, config=args,
                  use_bound_mask=use_bound_mask, use_floor_mask=use_floor_mask,
                  use_projection=use_projection, use_coordnconv=use_coordnconv)

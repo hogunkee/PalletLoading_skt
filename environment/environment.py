@@ -364,19 +364,13 @@ class Floor1(PalletLoadingSim):
         # previous state #
         previous_state = np.copy(self.state)
 
-        # denormalize action #
-        if self.action_norm:
-            action_pos = np.array(action[1:]) * self.resolution
-        else:
-            action_pos = np.array(action[1:])
-
         if self.box_norm:
             next_block = np.array(self.next_block) * self.resolution
         else:
             next_block = np.round(np.array(self.next_block) * self.resolution).astype(int)
         
         action_rot = action[0]
-        cy, cx = action_pos        
+        cy, cx = np.array(action[1:])
 
         if action_rot==0:
             by, bx, _ = next_block
@@ -409,6 +403,8 @@ class Floor1(PalletLoadingSim):
                                                box=next_block_bound)
 
         reward, episode_end = self.reward_fuc.get_2d_reward(previous_state, next_block_bound)
+        if episode_end: self.state = previous_state
+        if self.step_count == self.num_steps: episode_end = True
 
         self.next_block = self.get_next_block()
         if self.box_norm:
@@ -506,6 +502,7 @@ class FloorN(PalletLoadingSim):
             next_blocks = self.block_que
             self.renderer.render_current_state(self.state, next_blocks, previous_state,
                                                box=next_block_bound)
+            
         pose_ = [(min_y+max_y)/2/self.resolution, (min_x+max_x)/2/self.resolution, (box_level-1)*self.box_height]
         scale_ = [self.next_block[0], self.next_block[1], self.box_height]
 
@@ -517,6 +514,8 @@ class FloorN(PalletLoadingSim):
                                                             next_block_bound,
                                                             self.stacked_history,
                                                             self.level_map, box_level)
+        if episode_end: self.state = previous_state
+        if self.step_count == self.num_steps: episode_end = True
 
 
         self.next_block = self.get_next_block()
