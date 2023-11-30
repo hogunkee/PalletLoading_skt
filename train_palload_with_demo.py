@@ -212,7 +212,7 @@ def learning(
                 else: continue
 
             minibatch_replay = replay_buffer.sample(batch_size-int(batch_size*demo_ratio))
-            minibatch_demo = replay_buffer.sample(int(batch_size*demo_ratio))
+            minibatch_demo = demo_buffer.sample(int(batch_size*demo_ratio))
             minibatch = combine_batch(minibatch_replay, minibatch_demo)
 
             loss = agent.update_network(minibatch, tau)
