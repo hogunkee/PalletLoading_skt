@@ -289,7 +289,7 @@ if __name__=='__main__':
     parser.add_argument("--reward", default='dense', type=str)
     parser.add_argument("--max_levels", default=5, type=int)
     ## Learning ##
-    parser.add_argument("--algorithm", default='DQN', type=str, help='[DQN, D-PPO, D-TAC]')
+    parser.add_argument("--algorithm", default='D-TAC', type=str, help='[DQN, D-PPO, D-TAC]')
     parser.add_argument("--learning_rate", default=3e-4, type=float)
     parser.add_argument("--batch_size", default=256, type=int)
     parser.add_argument("--buff_size", default=1e5, type=float)
@@ -309,7 +309,7 @@ if __name__=='__main__':
     parser.add_argument("--target_entropy_ratio", default=0.98, type=float)
     ## Evaluate ##
     parser.add_argument("--evaluate", action="store_true")
-    parser.add_argument("--model_path", default="1130_0302_best", type=str)
+    parser.add_argument("--model_path", default="", type=str)
     parser.add_argument("--num_trials", default=25, type=int)
     ## ETC ##
     parser.add_argument("--show_q", action="store_true")
@@ -318,7 +318,7 @@ if __name__=='__main__':
     args = parser.parse_args()
 
     # env configuration #
-    render = True # True False #args.render
+    render = False # True False #args.render
     discrete_block = True #args.discrete
     max_steps = args.max_steps
     resolution = args.resolution
@@ -326,7 +326,7 @@ if __name__=='__main__':
     max_levels = args.max_levels
 
     # evaluate configuration #
-    evaluation = True # True False #args.evaluate
+    evaluation = False # True False #args.evaluate
     num_trials = args.num_trials
     show_q = False #args.show_q
 

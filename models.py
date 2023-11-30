@@ -56,7 +56,7 @@ class BinNet(nn.Module):
         h_cat = torch.cat([h, qmask], axis=1)
         h = self.conv_final(h_cat)        
         h = torch.flatten(h, start_dim=1)
-        
+
         output_prob = self.upscore(h)
         output_prob = output_prob.view(-1, self.n_rotations, H, W)
 
@@ -73,23 +73,23 @@ class DiscreteActor(nn.Module):
 
         if use_coordnconv:
             self.add_coords = AddCoords()
-            in_channels = in_channels + 2 + 2 + 2
+            in_channels = in_channels + 2 + 2
         else:
             self.add_coords = None
-            in_channels = in_channels + 2 + 2
+            in_channels = in_channels + 2
 
 
         self.conv1 = nn.Conv2d(in_channels, n_hidden[0], kernel_size=3, stride=1, padding=1, bias=True)
         self.bn1 = nn.BatchNorm2d(n_hidden[0])
-        self.conv2 = nn.Conv2d(n_hidden[0], n_hidden[1], kernel_size=2, stride=2, padding=1, bias=True)
+        self.conv2 = nn.Conv2d(n_hidden[0], n_hidden[1], kernel_size=3, stride=1, padding=1, bias=True)
         self.bn2 = nn.BatchNorm2d(n_hidden[1])
-        self.conv3 = nn.Conv2d(n_hidden[1], n_hidden[2], kernel_size=2, stride=2, padding=1, bias=True)
+        self.conv3 = nn.Conv2d(n_hidden[1], n_hidden[2], kernel_size=3, stride=1, padding=1, bias=True)
         self.bn3 = nn.BatchNorm2d(n_hidden[2])
 
-        self.conv_final = nn.Conv2d(n_hidden[2], 1, kernel_size=1)
+        self.conv_final = nn.Conv2d(n_hidden[2]+2, 1, kernel_size=1)
 
         self.upscore = nn.Sequential(
-            nn.Linear(4*4, 256),
+            nn.Linear(10*10, 256),
             nn.ReLU(),
             nn.Linear(256, 256),
             nn.ReLU(),
@@ -105,13 +105,14 @@ class DiscreteActor(nn.Module):
 
         x_block = block[..., None, None]
         x_block = (torch.ceil(x_block*H)/H).repeat(1,1,H,W)
-        x_cat = torch.cat([x, x_block, qmask], axis=1)
+        x_cat = torch.cat([x, x_block], axis=1)
 
         h = F.relu(self.bn1(self.conv1(x_cat)))
         h = F.relu(self.bn2(self.conv2(h)))
         h = F.relu(self.bn3(self.conv3(h)))
 
-        h = self.conv_final(h)
+        h_cat = torch.cat([h, qmask], axis=1)
+        h = self.conv_final(h_cat)
         h = torch.flatten(h, start_dim=1)
         action_logits = self.upscore(h)
      

@@ -98,7 +98,7 @@ class DiscreteTAC_Agent:
         else:
             return action, None
   
-    def calculate_critic_loss(self, batch, weights, max_error=5.0):
+    def calculate_critic_loss(self, batch, weights, max_error=0.0):
         state, block, qmask, next_state, next_block, next_qmask, actions, rewards, not_done = batch
         state = state.type(torch.float32)
         qmask = qmask.type(torch.float32)
