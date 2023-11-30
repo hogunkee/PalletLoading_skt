@@ -311,6 +311,7 @@ class PalletLoadingSim(object):
         if self.use_discrete_block:
             new_block = np.random.choice([0.2, 0.3, 0.4, 0.5], 2, True,
                                           p=[0.4, 0.3, 0.2, 0.1])
+                                          #p=[1.0, 0.0, 0.0, 0.0])
             new_block -= 0.01
         else:
             new_block = np.random.uniform(self.block_size_min, self.block_size_max, 2)
@@ -468,6 +469,7 @@ class FloorN(PalletLoadingSim):
 
         # previous state #
         previous_state = np.copy(self.state)
+        previous_map = np.copy(self.level_map)
 
         if self.box_norm:
             next_block = np.array(self.next_block) * self.resolution
@@ -500,7 +502,9 @@ class FloorN(PalletLoadingSim):
 
         if self.render:
             next_blocks = self.block_que
-            self.renderer.render_current_state(self.state, next_blocks, previous_state,
+            current_map = np.copy(self.level_map/self.max_levels)
+            previous_map = previous_map/self.max_levels
+            self.renderer.render_current_state(current_map, next_blocks, previous_map,
                                                box=next_block_bound)
             
         pose_ = [(min_y+max_y)/2/self.resolution, (min_x+max_x)/2/self.resolution, (box_level-1)*self.box_height]

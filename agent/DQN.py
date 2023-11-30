@@ -64,7 +64,7 @@ class DQN_Agent():
             else:
                 q_masked = q_value
 
-            soft_tmp = 1e-1 # 3e-1 # 1e-1
+            soft_tmp = 1e0 # 3e-1 # 1e-1
             q_probs = q_masked.reshape((-1,))
             q_probs = np.exp((q_probs-q_probs.max())/soft_tmp)
             q_probs = q_probs / q_probs.sum()
@@ -84,7 +84,7 @@ class DQN_Agent():
         else:
             return action, None
         
-    def calculate_loss(self, minibatch, FCQ, FCQ_target, gamma=0.95, max_error=5.0):
+    def calculate_loss(self, minibatch, FCQ, FCQ_target, gamma=0.99, max_error=5.0):
         state, block, qmask, next_state, next_block, next_qmask, actions, rewards, not_done = minibatch
         state = state.type(torch.float32)
         qmask = qmask.type(torch.float32)
@@ -105,11 +105,12 @@ class DQN_Agent():
 
         q_values = FCQ(state, block, qmask)
         q_values = q_values * qmask
-        q_values = q_values.view(-1, 2*n_y*n_x)
 
-        indices = (actions[:, 0] * n_x*n_y + actions[:,1]*n_x + actions[:,2]).unsqueeze(-1)
-        q_values = q_values.gather(1, indices)
-        pred = q_values.view(-1, 1)
+        pred = q_values[torch.arange(q_values.shape[0]), actions[:, 0], actions[:, 1], actions[:, 2]]
+        #q_values = q_values.view(-1, 2*n_y*n_x)
+        #indices = (actions[:, 0] * n_x*n_y + actions[:,1]*n_x + actions[:,2]).unsqueeze(-1)
+        #q_values = q_values.gather(1, indices)
+        pred = pred.view(-1, 1)
 
         a_prime = get_a_prime()
         if FCQ_target is None:
@@ -117,6 +118,7 @@ class DQN_Agent():
         else:
             next_q_target = FCQ_target(next_state, next_block, next_qmask)
         next_q_target *= next_qmask
+
         q_target_s_a_prime = next_q_target[torch.arange(next_q_target.shape[0]), a_prime[0], a_prime[1], a_prime[2]].unsqueeze(1)
         y_target = rewards + gamma * not_done * q_target_s_a_prime
         y_target = y_target.view(-1, 1).detach()
@@ -134,9 +136,8 @@ class DQN_Agent():
         loss, _ = self.calculate_loss(minibatch, self.FCQ, self.FCQ_target)
 
         self.optimizer.zero_grad()
-        loss.backward()
-        
-        torch.nn.utils.clip_grad_norm_(self.FCQ.parameters(), self.config.grad_clip)
+        loss.backward()        
+        #torch.nn.utils.clip_grad_norm_(self.FCQ.parameters(), self.config.grad_clip)
         self.optimizer.step()
 
         if self.FCQ_target is not None:

@@ -289,7 +289,7 @@ if __name__=='__main__':
     parser.add_argument("--reward", default='dense', type=str)
     parser.add_argument("--max_levels", default=3, type=int)
     ## Learning ##
-    parser.add_argument("--algorithm", default='D-TAC', type=str, help='[DQN, D-PPO, D-TAC]')
+    parser.add_argument("--algorithm", default='DQN', type=str, help='[DQN, D-PPO, D-TAC]')
     parser.add_argument("--learning_rate", default=3e-4, type=float)
     parser.add_argument("--batch_size", default=256, type=int)
     parser.add_argument("--buff_size", default=1e5, type=float)
