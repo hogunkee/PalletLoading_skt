@@ -50,21 +50,28 @@ class Renderer():
         if len(np.shape(state)) == 3:
             state = state[0]
             previous_state = previous_state[0]
+
+        b_gray = 0.85
         
         pad = int(0.1 * self.resolution)
-        state_pad = np.ones([int(1.2*self.resolution), int(1.2*self.resolution), 3]) * 0.7
+        state_pad = np.ones([int(1.2*self.resolution), int(1.2*self.resolution), 3]) * b_gray
         pad_mask = np.ones(state_pad.shape[:2])
         pad_mask[pad:-pad, pad:-pad] = 0
 
         pre_state_pad = state_pad.copy()
-        y, x = np.where(previous_state==0)
-        pre_state_pad[y + pad, x + pad] = (1, 1, 1)
-        y, x = np.where(previous_state==1)
-        pre_state_pad[y + pad, x + pad] = (0, 0, 0)
-        y, x = np.where(previous_state==2)
+        # y, x = np.where(previous_state==0)
+        # pre_state_pad[y + pad, x + pad] = (1, 1, 1)
+        # y, x = np.where(previous_state==1)
+        # pre_state_pad[y + pad, x + pad] = (0, 0, 0)
+        for y in range(np.shape(previous_state)[0]):
+            for x in range(np.shape(previous_state)[1]):
+                gray_ = 1.0 - previous_state[y,x]
+                pre_state_pad[y + pad, x + pad] = (gray_, gray_, gray_)
+        y, x = np.where(previous_state>1)
         pre_state_pad[y + pad, x + pad] = (1, 0, 0)
-        y, x = np.where(np.all(pre_state_pad!=[0.7, 0.7, 0.7], axis=-1) & (pad_mask==1))
+        y, x = np.where(np.all(pre_state_pad!=[b_gray,b_gray,b_gray], axis=-1) & (pad_mask==1))
         pre_state_pad[y, x] = (1, 0, 0)
+
         self.plots[0].imshow(pre_state_pad)
 
         if self.show_q:
@@ -83,18 +90,22 @@ class Renderer():
                 self.plots[3].imshow(q_value_empty)
                 self.plots[4].imshow(q_value_empty)
 
-        state_pad = np.ones([int(1.2*self.resolution), int(1.2*self.resolution), 3]) * 0.7
-        y, x = np.where(state==0)
-        state_pad[y + pad, x + pad] = (1, 1, 1)
-        y, x = np.where(state==1)
-        state_pad[y + pad, x + pad] = (0, 0, 0)
+        state_pad = np.ones([int(1.2*self.resolution), int(1.2*self.resolution), 3]) * b_gray
+        # y, x = np.where(state==0)
+        # state_pad[y + pad, x + pad] = (1, 1, 1)
+        # y, x = np.where(state==1)
+        # state_pad[y + pad, x + pad] = (0, 0, 0)
+        for y in range(np.shape(state)[0]):
+            for x in range(np.shape(state)[1]):
+                gray_ = 1.0 - state[y,x]
+                state_pad[y + pad, x + pad] = (gray_, gray_, gray_)
         if box is not None:
             min_y, max_y, min_x, max_x = np.array(box) + pad
             state_pad[min_y: max_y, min_x: max_x] = (0, 0, 1)
-        y, x = np.where(state==2)
 
+        y, x = np.where(state>1)
         state_pad[y + pad, x + pad] = (1, 0, 0)
-        y, x = np.where(np.all(state_pad!=[0.7, 0.7, 0.7], axis=-1) & (pad_mask==1))
+        y, x = np.where(np.all(state_pad!=[b_gray,b_gray,b_gray], axis=-1) & (pad_mask==1))
         state_pad[y, x] = (1, 0, 0)
         self.plots[1].imshow(state_pad)
 

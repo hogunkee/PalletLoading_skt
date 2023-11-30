@@ -84,7 +84,7 @@ class DQN_Agent():
         else:
             return action, None
         
-    def calculate_loss(self, minibatch, FCQ, FCQ_target, gamma=0.99, max_error=5.0):
+    def calculate_loss(self, minibatch, FCQ, FCQ_target, gamma=0.99, max_error=3.0):
         state, block, qmask, next_state, next_block, next_qmask, actions, rewards, not_done = minibatch
         state = state.type(torch.float32)
         qmask = qmask.type(torch.float32)
