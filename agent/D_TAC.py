@@ -9,24 +9,12 @@ from utils import *
 
 class DiscreteTAC_Agent:
     def __init__(self, train, model_path='', use_coordnconv=False, config=None, device='cuda:0'):
-                #  max_levels, resolution, train,
-                #  learning_rate=3e-4,
-                #  model_path=[],
-                #  use_coordnconv=False,
-                #  gamma=0.99,
-                #  target_entropy_ratio=0.98,
-                #  q_prime=1.2,
-                #  device='cuda:0',
-                #  ):
-        self.gamma = config.gamma
-
         # networks definition
         # pi : actor network, Q : 2 critic network
         self.pi = DiscreteActor(2, config.max_levels, config.resolution**2,
                                 use_coordnconv=use_coordnconv).to(device)
         self.Q = Critic(2, config.max_levels, config.resolution**2,
                         use_coordnconv=use_coordnconv).to(device)
-        self.q_prime = config.q_prime
         
         if train:
             self.pi.train()
@@ -46,7 +34,9 @@ class DiscreteTAC_Agent:
             # self.alpha = self.log_alpha.exp()
             # self.alpha_optim = Adam([self.log_alpha], lr=learning_rate)
             self.alpha = 0.2
+            self.gamma = config.gamma
             self.tau = config.tau
+            self.q_prime = config.q_prime
             self.device = device
 
         else:

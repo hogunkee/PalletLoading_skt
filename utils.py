@@ -1,4 +1,5 @@
 import math
+import pickle
 import numpy as np
 
 import torch
@@ -46,13 +47,6 @@ def generate_floor_mask(state, block, pre_mask=None, min_packed_ratio=0.80):
     cum_state = generate_cumulative_state(state)
     level_map = np.sum(cum_state, axis=0)
 
-    # min_packed_ratio, empty_level = 0.80, -1
-    # for i in range(0,max_level-1):
-    #     if np.mean(cum_state[i]) < min_packed_ratio:
-    #         empty_level = i+1
-    #         break
-
-    # if empty_level > 0:
     for level_limit in range(max_level):
         if pre_mask is None:
             mask = np.ones((2,resolution,resolution))
@@ -222,3 +216,66 @@ def freeze(net):
 def unfreeze(net):
     for p in net.parameters():
         p.requires_grad_(True)
+
+
+def convert_full_demonstrations(demo_buffer, New_Buffer, demo_name,
+                                use_floor_mask=False, max_levels=1, resolution=10):
+    n_demos = demo_buffer.size
+    new_buffer = New_Buffer(
+        [max_levels, resolution, resolution],
+        2, dim_action=3, max_size=int(n_demos)
+    )
+
+    for i in range(n_demos):
+        curr_state, curr_block = demo_buffer.state[i], demo_buffer.block[i]
+        curr_nextstate, curr_nextblock = demo_buffer.next_state[i], demo_buffer.next_block[i]
+
+        if max_levels > 1:
+            curr_state = np.concatenate(
+                (
+                    curr_state,
+                    np.zeros((max_levels-1, resolution, resolution))
+                ), axis=0
+            )
+            curr_nextstate = np.concatenate(
+                (
+                    curr_nextstate,
+                    np.zeros((max_levels-1, resolution, resolution))
+                ), axis=0
+            )
+
+        curr_qmask = generate_bound_mask(curr_state, curr_block)
+        if use_floor_mask:
+            curr_qmask = generate_floor_mask(curr_state, curr_block, curr_qmask)
+
+        curr_nextqmask = generate_bound_mask(curr_nextstate, curr_nextblock)
+        if use_floor_mask:
+            curr_nextqmask = generate_floor_mask(curr_nextstate, curr_nextblock, curr_nextqmask)
+
+        if max_levels == 1:
+            curr_state = curr_state[0]
+            curr_nextstate = curr_nextstate[0]
+
+        curr_action, curr_reward, curr_done = demo_buffer.action[i], demo_buffer.reward[i], False
+        new_buffer.add(curr_state, curr_block, curr_qmask, curr_action, \
+                       curr_nextstate, curr_nextblock, curr_nextqmask, curr_reward, curr_done)
+    
+    with open(demo_name, "wb") as f:
+        pickle.dump(new_buffer, f)
+        print('replay data saved at %s' %demo_name)
+    return new_buffer
+
+def combine_batch(batch1, batch2):
+    combined = []
+    for i in range(len(batch1)):
+        combined.append(torch.cat([batch1[i], batch2[i]]))
+    return combined
+
+def sample_combined_batch(buffer1, buffer2, batch_size):
+    n_sample1 = int(batch_size/10)
+    n_sample2 = int(batch_size - n_sample1)
+
+    batch1 = buffer1.sample(n_sample1)
+    batch2 = buffer2.sample(n_sample2)
+    minibatch = combine_batch(batch1, batch2)
+    return minibatch

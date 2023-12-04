@@ -65,11 +65,11 @@ class DiscretePPO_Agent:
 
         if np.random.random() < p_project:
             action = action_projection(state, block, action)
-        
+            action_idx = torch.tensor([[action[0]*n_y*n_x + action[1]*n_x + action[2]]], dtype=torch.long).cuda()
+
         val = self.V(state_tensor, block_tensor, qmask_tensor)
         val = val.cpu().detach().numpy()
-        if qmask is not None:
-            val *= qmask
+        val *= qmask
 
         probs = probs.gather(1, action_idx)
         probs = probs.cpu().detach().numpy()        

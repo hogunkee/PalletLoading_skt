@@ -3,7 +3,7 @@ import datetime
 import time
 import os
 import json
-
+import pickle
 import torch
 from utils import *
 
@@ -98,6 +98,7 @@ def learning(
         use_floor_mask=False,
         use_projection=False,
         use_coordnconv=False,
+        use_full_demos=False,
     ):
     agent = Agent(True, model_path, use_coordnconv, config)
 
@@ -113,6 +114,25 @@ def learning(
             dimS=[config.max_levels, config.resolution, config.resolution],
             dimA=3, gamma=config.gamma, lam=config.lam, lim=int(config.buff_size)
         )
+
+    if use_full_demos and learning_type == "off_policy":
+        demo_base = 'replay_0_B'
+        demo_name = demo_base
+        if use_floor_mask: demo_name += "_F"
+        if config.max_levels > 1: demo_name += "_L{}".format(config.max_levels)
+        demo_filename = 'demo/replay/{}.pkl'.format(demo_name)
+
+        if os.path.exists(demo_filename):
+            with open(demo_filename, 'rb') as f:
+                demo_buffer = pickle.load(f)
+        else:
+            demo_initname = 'demo/replay/{}.pkl'.format(demo_base)
+            with open(demo_initname, 'rb') as f:
+                demo_buffer = pickle.load(f)
+            demo_buffer= convert_full_demonstrations(demo_buffer, ReplayBuffer, demo_filename,
+                                                     use_floor_mask=use_floor_mask, max_levels=config.max_levels, resolution=config.resolution)
+    else:
+        demo_buffer = None
 
     log_train_returns, log_train_loss, log_train_len, log_train_pf = [], [], [], []
     log_test_len, log_test_pf, log_test_step = [], [], []
@@ -140,15 +160,15 @@ def learning(
         if len(state.shape)==2:
             state = state[np.newaxis, :, :]
 
+        q_mask = np.ones((2,resolution,resolution))
+        if use_bound_mask:
+            q_mask = generate_bound_mask(state, block)
+        if use_floor_mask:
+            q_mask = generate_floor_mask(state, block, q_mask)
+
         for t in range(env.num_steps):
             count_steps += 1
             ep_len += 1
-
-            q_mask = np.ones((2,resolution,resolution))
-            if use_bound_mask:
-                q_mask = generate_bound_mask(state, block)
-            if use_floor_mask:
-                q_mask = generate_floor_mask(state, block, q_mask)
 
             action, action_info = agent.get_action(state, block, q_mask,
                                                    soft_tmp=config.soft_tmp,
@@ -177,7 +197,10 @@ def learning(
             if learning_type == "off_policy":
                 replay_buffer.add(state, block, q_mask, action, next_state, next_block, next_q_mask, reward, done)
 
-                minibatch = replay_buffer.sample(int(config.batch_size))
+                if demo_buffer is None:
+                    minibatch = replay_buffer.sample(int(config.batch_size))
+                else:
+                    minibatch = sample_combined_batch(replay_buffer, demo_buffer, int(config.batch_size))
                 loss = agent.update_network(minibatch)
                 log_minibatchloss.append(loss)
 
@@ -198,7 +221,7 @@ def learning(
                     replay_buffer.reset()
                     break
             
-            state, block = next_state, next_block
+            state, block, q_mask = next_state, next_block, next_q_mask
             if done: break
 
         ep_pf = np.sum(next_state) / np.sum(np.ones_like(next_state))
@@ -285,14 +308,14 @@ if __name__=='__main__':
     ## Env ##
     parser.add_argument("--render", action="store_true")
     parser.add_argument("--discrete", action="store_false") # default: True
-    parser.add_argument("--max_steps", default=50, type=int)
+    parser.add_argument("--max_steps", default=70, type=int)
     parser.add_argument("--resolution", default=10, type=int)
     parser.add_argument("--reward", default='dense', type=str)
     parser.add_argument("--max_levels", default=5, type=int)
     ## Learning ##
-    parser.add_argument("--algorithm", default='D-TAC', type=str, help='[DQN, D-PPO, D-TAC]')
+    parser.add_argument("--algorithm", default='DQN', type=str, help='[DQN, D-PPO, D-TAC]')
     parser.add_argument("--learning_rate", default=3e-4, type=float)
-    parser.add_argument("--batch_size", default=256, type=int)
+    parser.add_argument("--batch_size", default=128, type=int)
     parser.add_argument("--buff_size", default=1e5, type=float)
     parser.add_argument("--tau", default=1e-3, type=float)
     parser.add_argument("--grad_clip", default=1e0, type=float)
@@ -311,13 +334,14 @@ if __name__=='__main__':
     parser.add_argument("--target_entropy_ratio", default=0.98, type=float)
     ## Evaluate ##
     parser.add_argument("--evaluate", action="store_true")
-    parser.add_argument("--model_path", default="", type=str)
+    parser.add_argument("--model_path", default="1204_1750_best", type=str)
     parser.add_argument("--num_trials", default=25, type=int)
-    ## ETC ##
+    ## Stack Condtions ##
     parser.add_argument("--use_bound_mask", action="store_true")
     parser.add_argument("--use_floor_mask", action="store_true")
     parser.add_argument("--use_projection", action="store_true")
     parser.add_argument("--use_coordnconv", action="store_true")
+    parser.add_argument("--use_full_demos", action="store_true")
     ## ETC ##
     parser.add_argument("--show_q", action="store_true")
     parser.add_argument("--gpu", default=-1, type=int)
@@ -325,7 +349,7 @@ if __name__=='__main__':
     args = parser.parse_args()
 
     # env configuration #
-    render = False # True False #args.render
+    render = True # True False #args.render
     discrete_block = args.discrete
     max_steps = args.max_steps
     resolution = args.resolution
@@ -333,7 +357,7 @@ if __name__=='__main__':
     max_levels = args.max_levels
 
     # evaluate configuration #
-    evaluation = args.evaluate
+    evaluation = True #args.evaluate
     num_trials = args.num_trials
     show_q = args.show_q
 
@@ -342,6 +366,7 @@ if __name__=='__main__':
     use_floor_mask = True # args.use_floor_mask
     use_projection = True # args.use_projection
     use_coordnconv = True # args.use_coordnconv
+    use_full_demos = True # args.use_full_demos
 
     gpu = args.gpu
     if "CUDA_VISIBLE_DEVICES" in os.environ:
@@ -418,4 +443,5 @@ if __name__=='__main__':
         learning(env=env, save_name=save_name, model_path=model_path,
                  learning_type=learning_type, config=args,
                  use_bound_mask=use_bound_mask, use_floor_mask=use_floor_mask,
-                 use_projection=use_projection, use_coordnconv=use_coordnconv)
+                 use_projection=use_projection, use_coordnconv=use_coordnconv,
+                 use_full_demos=use_full_demos)
