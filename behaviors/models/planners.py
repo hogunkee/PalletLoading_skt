@@ -155,7 +155,7 @@ class ModelBasedPlanner(object):
         self.x_max = self.origin[0] + self.origin_offset[0] + self.size[0] / 2.0 - self.pallet_padding
         self.y_max = self.origin[1] + self.origin_offset[1] + self.size[1] / 2.0 - self.pallet_padding
         
-        self.corner = np.array([self.x_max, self.y_max]) # position of top left corner of new bin.
+        self.corner = np.array([self.x_max, self.y_min]) # position of top left corner of new bin.
         
         self.x_high_list = []
         self.y_bound_list = [] # start from self.y_min, but abbreviated.
@@ -272,7 +272,7 @@ class ModelBasedPlanner(object):
 
         # get pose and scale based on current pallet
         pose_ = np.array([-(min_y+max_y)/2/self.resolution + self.corner[0], 
-                 -(min_x+max_x)/2/self.resolution + self.corner[1], 
+                 (min_x+max_x)/2/self.resolution + self.corner[1], 
                  -0.35 + (box_level-1)*self.box_height])
         
         self.poses.append(pose_)
