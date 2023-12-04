@@ -267,7 +267,7 @@ class PalletLoadingSim(object):
         self.block_size_max = block_size_max
         self.use_discrete_block = discrete_block
 
-        self.box_height = 0.156
+        self.box_height = 0.15
         self.q_value = None
         self.block_que = []
         self.max_levels = max_levels
@@ -461,7 +461,7 @@ class FloorN(PalletLoadingSim):
         assert max_levels >= 2
 
         from environment.sim_app import StabilityChecker
-        stability_checker = StabilityChecker(box_height=self.box_height, max_level=5)
+        stability_checker = StabilityChecker(box_height=self.box_height, max_level=max_levels)
         #stability_checker = None
 
         self.reward_fuc = RewardFunc(reward_type,
@@ -518,7 +518,7 @@ class FloorN(PalletLoadingSim):
             self.renderer.render_current_state(current_map, next_blocks, previous_map,
                                                box=next_block_bound)
             
-        pose_ = [(min_y+max_y)/2/self.resolution, (min_x+max_x)/2/self.resolution, (box_level-1)*self.box_height]
+        pose_ = [(min_y+max_y)/2/self.resolution, (min_x+max_x)/2/self.resolution, (box_level-1)*(self.box_height+0.007)]
         scale_ = [self.next_block[0], self.next_block[1], self.box_height]
 
         self.stacked_history["pose_list"].append(pose_)

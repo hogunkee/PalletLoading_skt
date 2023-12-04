@@ -14,12 +14,12 @@ import argparse
 from omni.isaac.kit import SimulationApp
 
 # add argparse arguments
-parser = argparse.ArgumentParser("Welcome to Orbit: Omniverse Robotics Environments!")
-parser.add_argument("--headless", action="store_true", default=False, help="Force display off at all times.")
-args_cli = parser.parse_args()
+# parser = argparse.ArgumentParser("Welcome to Orbit: Omniverse Robotics Environments!")
+# parser.add_argument("--headless", action="store_true", default=False, help="Force display off at all times.")
+# args_cli = parser.parse_args()
 
-# launch omniverse app
-config = {"headless": args_cli.headless}
+# # launch omniverse app
+config = {"headless": False}
 simulation_app = SimulationApp(config)
 
 
@@ -269,7 +269,7 @@ class StabilityChecker():
                 break
             # If simulation is paused, then skip.
             if not self.sim.is_playing():
-                self.sim.step(render=not args_cli.headless)
+                self.sim.step(render=True)
                 continue
 
             if count % self.spawn_interval == 0 and box_idx < n_boxes:

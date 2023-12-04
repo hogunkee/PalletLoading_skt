@@ -27,7 +27,8 @@ class BinNet(nn.Module):
         self.conv3 = nn.Conv2d(n_hidden[1], n_hidden[2], kernel_size=3, stride=1, padding=1, bias=True)
         self.bn3 = nn.BatchNorm2d(n_hidden[2])
 
-        self.conv_final = nn.Conv2d(n_hidden[2]+2, 1, kernel_size=1)
+        #self.conv_final = nn.Conv2d(n_hidden[2]+2, 1, kernel_size=1)
+        self.conv_final = nn.Conv2d(n_hidden[2], 2, kernel_size=1)
 
         self.upscore = nn.Sequential(
             #nn.Linear(4*4, 256),
@@ -53,8 +54,10 @@ class BinNet(nn.Module):
         h = F.relu(self.bn2(self.conv2(h)))
         h = F.relu(self.bn3(self.conv3(h)))
 
-        h_cat = torch.cat([h, qmask], axis=1)
-        h = self.conv_final(h_cat)        
+        #h_cat = torch.cat([h, qmask], axis=1)
+        #h = self.conv_final(h_cat)        
+        h = self.conv_final(h)
+        h = h * qmask
         h = torch.flatten(h, start_dim=1)
 
         output_prob = self.upscore(h)
@@ -98,7 +101,7 @@ class DiscreteActor(nn.Module):
             #nn.Sigmoid(),
         )
 
-    def forward(self, x, block, qmask, deterministic=False, tsallis=False, q_prime=1.2):
+    def forward(self, x, block, qmask, soft_tmp=1e-1, deterministic=False, tsallis=False, q_prime=1.2):
         B0, _, H, W = x.size()
         if self.add_coords is not None:
             x = self.add_coords(x)
@@ -121,7 +124,7 @@ class DiscreteActor(nn.Module):
         min_logits = torch.zeros_like(action_logits)            
         action_logits = torch.where(q_mask > 0, action_logits, min_logits)
 
-        soft_tmp = 1e-1
+        #soft_tmp = 1e-1
         action_probs = F.softmax(action_logits/soft_tmp, dim=1)
         action_dist = Categorical(action_probs)
 
