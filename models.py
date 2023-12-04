@@ -90,10 +90,10 @@ class DiscreteActor(nn.Module):
         self.conv3 = nn.Conv2d(n_hidden[1], n_hidden[2], kernel_size=3, stride=1, padding=1, bias=True)
         self.bn3 = nn.BatchNorm2d(n_hidden[2])
 
-        self.conv_final = nn.Conv2d(n_hidden[2]+2, 1, kernel_size=1)
+        self.conv_final = nn.Conv2d(n_hidden[2], 2, kernel_size=1)
 
         self.upscore = nn.Sequential(
-            nn.Linear(10*10, 256),
+            nn.Linear(2*10*10, 256),
             nn.ReLU(),
             nn.Linear(256, 256),
             nn.ReLU(),
@@ -115,8 +115,8 @@ class DiscreteActor(nn.Module):
         h = F.relu(self.bn2(self.conv2(h)))
         h = F.relu(self.bn3(self.conv3(h)))
 
-        h_cat = torch.cat([h, qmask], axis=1)
-        h = self.conv_final(h_cat)
+        h = self.conv_final(h)
+        h = h * qmask
         h = torch.flatten(h, start_dim=1)
         action_logits = self.upscore(h)
      
