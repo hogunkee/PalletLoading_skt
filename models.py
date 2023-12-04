@@ -32,7 +32,8 @@ class BinNet(nn.Module):
 
         self.upscore = nn.Sequential(
             #nn.Linear(4*4, 256),
-            nn.Linear(10*10, 256),
+            #nn.Linear(10*10, 256),
+            nn.Linear(2*10*10, 256),
             nn.ReLU(),
             nn.Linear(256, 256),
             nn.ReLU(),

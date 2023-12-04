@@ -35,7 +35,7 @@ class DQN_Agent():
         else: self.FCQ.eval()
 
     def get_action(self, state, block, qmask,
-                   with_q=False, deterministic=True, p_project=0.0):
+                   soft_tmp=1e-1, with_q=False, deterministic=True, p_project=0.0):
         state_tensor = torch.FloatTensor([state]).cuda()
         block_tensor = torch.FloatTensor([block]).cuda()
         qmask_tensor = torch.FloatTensor([qmask]).cuda()
@@ -64,7 +64,7 @@ class DQN_Agent():
             else:
                 q_masked = q_value
 
-            soft_tmp = 1e0 # 3e-1 # 1e-1
+            #soft_tmp = 1e0 # 3e-1 # 1e-1
             q_probs = q_masked.reshape((-1,))
             q_probs = np.exp((q_probs-q_probs.max())/soft_tmp)
             q_probs = q_probs / q_probs.sum()

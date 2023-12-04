@@ -151,6 +151,7 @@ def learning(
                 q_mask = generate_floor_mask(state, block, q_mask)
 
             action, action_info = agent.get_action(state, block, q_mask,
+                                                   soft_tmp=config.soft_tmp,
                                                    with_q=config.show_q,
                                                    deterministic=False,
                                                    p_project=p_projection)
@@ -283,7 +284,7 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser()
     ## Env ##
     parser.add_argument("--render", action="store_true")
-    parser.add_argument("--discrete", action="store_true")
+    parser.add_argument("--discrete", action="store_false") # default: True
     parser.add_argument("--max_steps", default=50, type=int)
     parser.add_argument("--resolution", default=10, type=int)
     parser.add_argument("--reward", default='dense', type=str)
@@ -295,6 +296,7 @@ if __name__=='__main__':
     parser.add_argument("--buff_size", default=1e5, type=float)
     parser.add_argument("--tau", default=1e-3, type=float)
     parser.add_argument("--grad_clip", default=1e0, type=float)
+    parser.add_argument("--soft_tmp", default=1e-1, type=float)
     parser.add_argument("--total_episodes", default=5e5, type=float)
     parser.add_argument("--log_freq", default=250, type=int)
     ## For DQN ##
@@ -312,6 +314,11 @@ if __name__=='__main__':
     parser.add_argument("--model_path", default="", type=str)
     parser.add_argument("--num_trials", default=25, type=int)
     ## ETC ##
+    parser.add_argument("--use_bound_mask", action="store_true")
+    parser.add_argument("--use_floor_mask", action="store_true")
+    parser.add_argument("--use_projection", action="store_true")
+    parser.add_argument("--use_coordnconv", action="store_true")
+    ## ETC ##
     parser.add_argument("--show_q", action="store_true")
     parser.add_argument("--gpu", default=-1, type=int)
     parser.add_argument("--wandb_off", action="store_true")
@@ -319,22 +326,22 @@ if __name__=='__main__':
 
     # env configuration #
     render = False # True False #args.render
-    discrete_block = True #args.discrete
+    discrete_block = args.discrete
     max_steps = args.max_steps
     resolution = args.resolution
     reward_type = args.reward
     max_levels = args.max_levels
 
     # evaluate configuration #
-    evaluation = False # True False #args.evaluate
+    evaluation = args.evaluate
     num_trials = args.num_trials
-    show_q = False #args.show_q
+    show_q = args.show_q
 
     # heuristics #
-    use_bound_mask = True
-    use_floor_mask = True
-    use_projection = True
-    use_coordnconv = True
+    use_bound_mask = True # args.use_bound_mask
+    use_floor_mask = True # args.use_floor_mask
+    use_projection = True # args.use_projection
+    use_coordnconv = True # args.use_coordnconv
 
     gpu = args.gpu
     if "CUDA_VISIBLE_DEVICES" in os.environ:

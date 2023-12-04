@@ -32,7 +32,7 @@ def generate_cumulative_state(state):
     return cum_state
 
 
-def generate_floor_mask(state, block, pre_mask=None):
+def generate_floor_mask(state, block, pre_mask=None, min_packed_ratio=0.80):
     resolution = np.shape(state)[1]
     if pre_mask is None:
         mask = np.ones((2,resolution,resolution))
@@ -46,46 +46,54 @@ def generate_floor_mask(state, block, pre_mask=None):
     cum_state = generate_cumulative_state(state)
     level_map = np.sum(cum_state, axis=0)
 
-    min_packed_ratio, empty_level = 0.75, -1
-    for i in range(0,max_level-1):
-        if np.mean(cum_state[i]) < min_packed_ratio:
-            empty_level = i+1
-            break
+    # min_packed_ratio, empty_level = 0.80, -1
+    # for i in range(0,max_level-1):
+    #     if np.mean(cum_state[i]) < min_packed_ratio:
+    #         empty_level = i+1
+    #         break
 
-    if empty_level > 0:
-        for level_limit in range(empty_level, max_level):
-            if pre_mask is None:
-                mask = np.ones((2,resolution,resolution))
-            else:
-                mask = np.copy(pre_mask)
+    # if empty_level > 0:
+    for level_limit in range(max_level):
+        if pre_mask is None:
+            mask = np.ones((2,resolution,resolution))
+        else:
+            mask = np.copy(pre_mask)
 
-            for y_ in range(resolution):
-                for x_ in range(resolution):
-                    if mask[0,y_,x_] == 0: continue
-                    min_y, max_y = math.floor(y_-by/2), math.floor(y_+by/2)
-                    min_x, max_x = math.floor(x_-bx/2), math.floor(x_+bx/2)
+        if level_limit == 0:
+            previous_packed_ratio = 1.0
+        else:
+            previous_packed_ratio = np.mean(cum_state[level_limit-1])
 
-                    box_placed = np.zeros(np.shape(state[0]))
-                    box_placed[max(min_y,0): max_y, max(min_x,0): max_x] = 1
+        if np.mean(cum_state[level_limit]) >= previous_packed_ratio*min_packed_ratio:
+            continue
 
-                    curr_map = level_map + box_placed
-                    if len(np.where(np.array(curr_map)>level_limit)[0]) > 0:
-                        mask[0,y_,x_] = 0
+        for y_ in range(resolution):
+            for x_ in range(resolution):
+                if mask[0,y_,x_] == 0: continue
+                min_y, max_y = math.floor(y_-by/2), math.floor(y_+by/2)
+                min_x, max_x = math.floor(x_-bx/2), math.floor(x_+bx/2)
 
-            for y_ in range(resolution):
-                for x_ in range(resolution):
-                    if mask[1,x_,y_] == 0: continue
-                    min_y, max_y = math.floor(y_-by/2), math.floor(y_+by/2)
-                    min_x, max_x = math.floor(x_-bx/2), math.floor(x_+bx/2)
+                box_placed = np.zeros(np.shape(state[0]))
+                box_placed[max(min_y,0): max_y, max(min_x,0): max_x] = 1
 
-                    box_placed = np.zeros(np.shape(state[0]))
-                    box_placed[max(min_x,0): max_x, max(min_y,0): max_y] = 1
+                curr_map = level_map + box_placed
+                if len(np.where(np.array(curr_map)>level_limit)[0]) > 0:
+                    mask[0,y_,x_] = 0
 
-                    curr_map = level_map + box_placed
-                    if len(np.where(np.array(curr_map)>level_limit)[0]) > 0:
-                        mask[1,x_,y_] = 0
+        for y_ in range(resolution):
+            for x_ in range(resolution):
+                if mask[1,x_,y_] == 0: continue
+                min_y, max_y = math.floor(y_-by/2), math.floor(y_+by/2)
+                min_x, max_x = math.floor(x_-bx/2), math.floor(x_+bx/2)
 
-            if np.sum(mask) > 0: break
+                box_placed = np.zeros(np.shape(state[0]))
+                box_placed[max(min_x,0): max_x, max(min_y,0): max_y] = 1
+
+                curr_map = level_map + box_placed
+                if len(np.where(np.array(curr_map)>level_limit)[0]) > 0:
+                    mask[1,x_,y_] = 0
+
+        if np.sum(mask) > 0: break
 
     if np.sum(mask) == 0:
         return pre_mask

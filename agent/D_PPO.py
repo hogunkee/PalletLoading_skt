@@ -50,13 +50,13 @@ class DiscretePPO_Agent:
             self.V.eval() 
 
     def get_action(self, state, block, qmask,
-                   with_q=False, deterministic=True, p_project=0.0):
+                   soft_tmp=1e-1, with_q=False, deterministic=True, p_project=0.0):
         state_tensor = torch.FloatTensor([state]).cuda()
         block_tensor = torch.FloatTensor([block]).cuda()
         qmask_tensor = torch.FloatTensor([qmask]).cuda()
         
         _, n_y, n_x = state.shape
-        action_idx, probs, _ = self.pi(state_tensor, block_tensor, qmask_tensor, deterministic=deterministic)
+        action_idx, probs, _ = self.pi(state_tensor, block_tensor, qmask_tensor, soft_tmp=soft_tmp, deterministic=deterministic)
         action_th = action_idx // (n_y*n_x)
         action_y = (action_idx % (n_y*n_x)) // n_x
         action_x = (action_idx % (n_y*n_x)) % n_x
