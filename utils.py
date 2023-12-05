@@ -33,7 +33,7 @@ def generate_cumulative_state(state):
     return cum_state
 
 
-def generate_floor_mask(state, block, pre_mask=None, min_packed_ratio=0.80):
+def generate_floor_mask(state, block, pre_mask=None, min_packed_ratio=0.70):
     resolution = np.shape(state)[1]
     if pre_mask is None:
         mask = np.ones((2,resolution,resolution))

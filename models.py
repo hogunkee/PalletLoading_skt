@@ -122,7 +122,8 @@ class DiscreteActor(nn.Module):
      
         q_mask = qmask.view(action_logits.shape).to(x.device)
         #min_logits, _ = torch.min(action_logits, dim=1, keepdim=True)
-        min_logits = torch.zeros_like(action_logits)            
+        #min_logits = torch.zeros_like(action_logits)
+        min_logits = torch.ones_like(action_logits)*(-1e2)
         action_logits = torch.where(q_mask > 0, action_logits, min_logits)
 
         #soft_tmp = 1e-1

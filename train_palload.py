@@ -319,7 +319,7 @@ if __name__=='__main__':
     parser.add_argument("--buff_size", default=1e5, type=float)
     parser.add_argument("--tau", default=1e-3, type=float)
     parser.add_argument("--grad_clip", default=1e0, type=float)
-    parser.add_argument("--soft_tmp", default=1e-1, type=float)
+    parser.add_argument("--soft_tmp", default=1e0, type=float)
     parser.add_argument("--total_episodes", default=5e5, type=float)
     parser.add_argument("--log_freq", default=250, type=int)
     ## For DQN ##
@@ -334,7 +334,7 @@ if __name__=='__main__':
     parser.add_argument("--target_entropy_ratio", default=0.98, type=float)
     ## Evaluate ##
     parser.add_argument("--evaluate", action="store_true")
-    parser.add_argument("--model_path", default="1204_1750_best", type=str)
+    parser.add_argument("--model_path", default="", type=str)
     parser.add_argument("--num_trials", default=25, type=int)
     ## Stack Condtions ##
     parser.add_argument("--use_bound_mask", action="store_true")
@@ -348,8 +348,13 @@ if __name__=='__main__':
     parser.add_argument("--wandb_off", action="store_true")
     args = parser.parse_args()
 
+    # DQN with demo: R 78.47 / B 24.33 / P 0.419 / F 0.821
+    # DQN:   R 70.95 / B 22.96 / P 0.390 / F 0.804
+    # D-TAC: R 81.69 / B 24.68 / P 0.438
+    # D-PPO: R 64.63 / B 21.36 / P 0.373
+
     # env configuration #
-    render = True # True False #args.render
+    render = args.render
     discrete_block = args.discrete
     max_steps = args.max_steps
     resolution = args.resolution
@@ -357,7 +362,7 @@ if __name__=='__main__':
     max_levels = args.max_levels
 
     # evaluate configuration #
-    evaluation = True #args.evaluate
+    evaluation = args.evaluate
     num_trials = args.num_trials
     show_q = args.show_q
 

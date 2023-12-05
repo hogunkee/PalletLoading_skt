@@ -90,7 +90,7 @@ class DiscretePPO_Agent:
         for i in range(self.num_updates):
             action, probs, log_probs = self.pi(state, block, qmask)
             indices = (actions[:, 0] * n_x*n_y + actions[:,1]*n_x + actions[:,2]).unsqueeze(-1)
-
+            
             entropy = Categorical(probs).entropy().sum(0, keepdim=True)
             probs = probs.gather(1, action.long())
 
@@ -107,7 +107,8 @@ class DiscretePPO_Agent:
             v = (v*qmask).view(-1, 2*n_y*n_x)
             v = v.gather(1, indices.long())
             
-            target_v = (probs * target_v.view(-1, 2*n_y*n_x)).sum(dim=1, keepdims=True)            
+            #target_v = (probs * target_v.view(-1, 2*n_y*n_x)).sum(dim=1, keepdims=True)   
+            target_v = torch.max(target_v.view(-1, 2*n_y*n_x), dim=1)[0].view(-1,1)
             V_loss = torch.mean((v - target_v) ** 2)
 
             loss = pi_loss + V_loss

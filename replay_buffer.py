@@ -131,10 +131,8 @@ class OnReplayBuffer(object):
         v = np.zeros([idx - start +2, R*H*W])
         v[-1] = v_last
         v[:-1] = self._val_mem[start: idx + 1].reshape(-1, R*H*W)
-
         # compute TD-error based on value estimate
         delta = np.tile(np.expand_dims((self._rew_mem[start: idx + 1]),1), R*H*W) + gamma * v[1:] - v[:-1]
-
         # backward calculation of cumulative rewards & GAE
         next_GAE = np.zeros([R, H, W])
         # for a truncated episode, the last reward is set to 0
@@ -143,6 +141,7 @@ class OnReplayBuffer(object):
 
         for t in range(idx, start - 1, -1):
             self._target_v_mem[t] = (self._rew_mem[t] + gamma * next_R).reshape(-1, R, H, W)
+            #self._target_v_mem[t] *= self._qmask_mem[t]
             self._adv_mem[t] = (delta[t - start] + (gamma * lam) * next_GAE.reshape(-1, R*H*W)).reshape(-1, R, H ,W)
 
             next_R = self._target_v_mem[t].reshape(-1, R*H*W)
@@ -177,4 +176,5 @@ class OnReplayBuffer(object):
             torch.FloatTensor(probs).to(self.device),
             torch.FloatTensor(qmask).to(self.device),
         ]
+        
         return data_batch

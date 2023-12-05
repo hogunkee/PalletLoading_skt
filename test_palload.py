@@ -77,13 +77,13 @@ def random_bin_spawn_transform():
 
 
 class BinStackingTask(BaseTask):
-    def __init__(self, env_path, assets):
+    def __init__(self, env_path, assets, pallet_scale):
         super().__init__("bin_stacking")
         self.assets = assets
+        self.pallet_scale = pallet_scale
 
         self.env_path = "/World/Ur10Table"
         self.bins = []
-        self.stashed_bins = []
         self.on_conveyor = None
 
     def _spawn_bin(self, rigid_bin):
@@ -108,7 +108,7 @@ class BinStackingTask(BaseTask):
             spawn_new = True
         else:
             (x, y, z), _ = self.on_conveyor.get_world_pose()
-            is_on_conveyor = y > 0.5 and -0.5 < x and x < 0.5
+            is_on_conveyor = y > 0.4 and -0.5 < x and x < 0.5
             if not is_on_conveyor:
                 spawn_new = True
 
@@ -119,9 +119,9 @@ class BinStackingTask(BaseTask):
             # add_reference_to_stage(usd_path=self.assets.small_klt_usd, prim_path=prim_path)
 
             # scale bin from randomly chosen bin size
-            bin_size = np.random.choice([0.2, 0.3, 0.4, 0.5], 2, True, p=[0.4, 0.3, 0.2, 0.1])
-            bin_size *= 0.9
-            bin_size = np.append(bin_size, 0.15)
+            bin_size = np.random.choice([0.2, 0.3, 0.4, 0.5], 2, True, p=[0.4, 0.3, 0.2, 0.1]) * self.pallet_scale
+            bin_size -= 0.02
+            bin_size = np.append(bin_size, 0.15 * self.pallet_scale)
             
             scale = get_scale(prim_path, bin_size)
             
@@ -202,7 +202,7 @@ def main(agent, args):
         orientation=rot_utils.euler_angles_to_quats(np.array([0, 105, 0]), degrees=True),
     )
 
-    world.add_task(BinStackingTask(env_path, ur10_assets))
+    world.add_task(BinStackingTask(env_path, ur10_assets, args.pallet_scale))
     world.add_decider_network(behavior.make_decider_network(robot, agent, args))
     world.add_camera(camera)
 
@@ -216,9 +216,10 @@ if __name__ == "__main__":
     ## Env ##
     parser.add_argument("--resolution", default=10, type=int)
     parser.add_argument("--max_levels", default=5, type=int)
+    parser.add_argument("--pallet_scale", default=0.8, type=float)
     ## Agent ##
     parser.add_argument("--algorithm", default='DQN', type=str, help='[DQN, D-PPO, D-TAC]')
-    parser.add_argument("--model_path", default="1204_1750_best", type=str)
+    parser.add_argument("--model_path", default="", type=str)
     parser.add_argument("--num_trials", default=25, type=int)
     ## Stack Condtions ##
     parser.add_argument("--use_bound_mask", action="store_false")

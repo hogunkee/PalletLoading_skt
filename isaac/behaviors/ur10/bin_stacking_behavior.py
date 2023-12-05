@@ -33,7 +33,7 @@ from omni.isaac.cortex.obstacle_monitor_context import ObstacleMonitor, Obstacle
 from isaac.behaviors.models.planners import NaivePlanner, NaiveRuleBasedPlanner, \
     RuleBasedPlanner, ModelBasedPlanner
 
-from isaac.isaac_utils import get_bin_info, bbox_info, scaled_bbox_info
+from isaac.isaac_utils import get_bin_info, bbox_info, scaled_bbox_info, Renderer
 
 class BinState:
     def __init__(self, bin_obj):
@@ -116,7 +116,10 @@ class BinStackingContext(ObstacleMonitorContext):
         pallet = self.world.scene.get_object("pallet")
         self.pallet_pos, _ = pallet.get_world_pose()
         self.pallet_size = bbox_info(pallet.prim_path)
-        
+
+        self.max_levels = args.max_levels
+        self.pallet_scale = args.pallet_scale
+
         # self.planner = RuleBasedPlanner(self.pallet_pos, self.pallet_size)# NaivePlanner()
         self.planner = ModelBasedPlanner(self.pallet_pos, self.pallet_size,
                                          agent=agent, args=args)
@@ -149,7 +152,7 @@ class BinStackingContext(ObstacleMonitorContext):
     def stack_complete(self):
         # return len(self.stacked_bins) == len(self.stack_coordinates)
         # TODO: how should we define stack_complete?
-        return self.stacked_volume / (1.0 * 1.0 * 0.15 * 3) > 0.9
+        return self.stacked_volume / (1.0 * 1.0 * 0.15 * self.max_levels) > 0.9
 
     @property
     def stacked_volume(self):
@@ -181,7 +184,7 @@ class BinStackingContext(ObstacleMonitorContext):
 
                 # Check whether it's on the conveyor in the active region.
                 x, y, z = p
-                if 0.5 < y and y < 0.8 and -0.5 < x and x < 0.5:
+                if 0.4 < y and y < 0.8 and -0.5 < x and x < 0.5:
                     if self.active_bin is None or y < min_y:
                         self.active_bin = bin_state
                         min_y = y
@@ -338,7 +341,7 @@ class ReachToPlace(MoveWithNavObs):
         # self.level_map[max(min_y,0):max_y,max(min_x,0):max_x] = box_level
         # (box_level-1)*self.box_height+0.01
         
-        self.target_p, action_rot = self.context.planner.get_action(bin_bbox)
+        self.target_p, action_rot = self.context.planner.get_action(bin_bbox, scale=self.context.pallet_scale)
         self.bin_under = get_bin_under(self.target_p, self.context.stacked_bins)
 
         # TODO: calculate rotation matrix -> change to quaternion..?
@@ -375,7 +378,7 @@ class ReachToPlace(MoveWithNavObs):
             print("===============Evaluation Result===============")
             stacked_bin_observations, stacked_volume = \
                 self.context.stacked_bin_observation()
-            stacked_percentage = stacked_volume / (1.0 * 1.0 * 0.15 * 3) * 100
+            stacked_percentage = stacked_volume / (1.0 * 1.0 * 0.15 * self.context.max_levels) * 100
             print("Stacked: {} bins, {:.2f}% of the total volume".format(len(stacked_bin_observations), 
                                                     stacked_percentage))
             print("===============================================")
@@ -561,8 +564,10 @@ class Dispatch(DfDecider):
             print("Finished episode successfully!!!")
             print("===============Evaluation Result===============")         
             print("Stacked: {} bins, {:.2f}% of the total volume".format(len(self.context.stacked_bins), 
-                                                    self.context.stacked_volume / (1.0 * 1.0 * 0.15 * 3) * 100))
-            
+                                                    self.context.stacked_volume / (1.0 * 1.0 * 0.15 * self.context.max_levels) * 100))
+
+            self.place_step = 0
+            self.context.world.reset(soft=False)            
             print("===============================================")
             return DfDecision("go_home")
 
