@@ -163,12 +163,11 @@ class ModelBasedPlanner(object):
         self.last_y_bound_list = [self.y_max] # start from self.y_min, but abbreviated.
         
         self.z = -0.3
-        self.z_inc = 0.15 * args.pallet_scale
         
         self.resolution = args.resolution
         self.max_levels = args.max_levels
         self.box_norm = True
-        self.box_height = 0.15 * args.pallet_scale
+        self.box_height = 0.15
         
         self.state = np.zeros((args.max_levels, args.resolution, args.resolution))
         self.level_map = np.zeros((args.resolution, args.resolution))

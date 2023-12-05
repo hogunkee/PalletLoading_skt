@@ -498,30 +498,13 @@ def check_stability(input_list, output_list,
         euler_input_ = rot_input_.as_euler('xyz', degrees=True)
         rot_output_ = Rotation.from_quat(output_quat[i])
         euler_output_ = rot_output_.as_euler('xyz', degrees=True)
-        euler_ = max([
-            abs(euler_input_[0]-euler_output_[0]),
-            abs(euler_input_[1]-euler_output_[1]),
-            abs(euler_input_[2]-euler_output_[2]),
-        ])
-        #euler_ = abs(euler_input_[2]-euler_output_[2])
+
+        # calculate euler distance between z-axis
+        euler_ = abs(euler_input_[1]-euler_output_[1])
         euler_ = min(euler_, 180-euler_)
 
-        # if dist_ > min_pose_error or input_level[i] != output_level[i] or euler_ > min_quat_error:
-        #     stability_ = False
-        #     moved_boxes.append(i)
-
-        if dist_ > min_pose_error:
+        if dist_ > min_pose_error or euler_ > min_quat_error:
             stability_ = False
             moved_boxes.append(i)
-
-            # if dist_ > min_pose_error: print("D:", i, dist_)
-            # if input_level[i] != output_level[i]: print("L:", i, input_level[i], output_level[i])
-            # if euler_ > min_quat_error: print("Q:", i, euler_input_[0]-euler_output_[0], euler_input_[1]-euler_output_[1], euler_input_[2]-euler_output_[2])
-
-    if print_info:
-        if len(moved_boxes) == 1:
-            print("  * [Unstable] Box[{}] is Moved.".format(moved_boxes))
-        elif len(moved_boxes) >= 2:
-            print("  * [Unstable] Box[{}] are Moved.".format(moved_boxes))
 
     return stability_

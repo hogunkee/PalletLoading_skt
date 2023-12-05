@@ -290,11 +290,13 @@ class ReachToPick(MoveWithNavObs):
 
     def __init__(self):
         super().__init__(p_thresh=0.001, R_thresh=2.0)
+        self.place_step = 0
 
     def enter(self):
         super().enter()
 
     def step(self):
+        self.place_step += 1
         R, p = math_util.unpack_T(self.context.active_bin.grasp_T)
         ax, ay, az = math_util.unpack_R(R)
 
@@ -310,9 +312,25 @@ class ReachToPick(MoveWithNavObs):
             )
         )
 
+        if self.place_step > 400:
+            print("Planning takes too long!!! Resetting the environment")
+            print("===============Evaluation Result===============")
+            stacked_bin_observations, stacked_percentage = \
+                self.context.stacked_bin_observation()
+            stacked_percentage *= 100
+            print("Stacked: {} bins, {:.2f}% of the total volume".format(len(stacked_bin_observations), 
+                                                    stacked_percentage))
+            self.context.world.total_stacked_percentage += stacked_percentage
+            self.context.world.num_episodes += 1
+            print("Average stacked percentage: {:.2f}%".format(self.context.world.total_stacked_percentage / self.context.world.num_episodes))
+            print("===============================================")
+            self.place_step = 0
+            self.context.world.reset(soft=False)
+
         return super().step()
 
     def exit(self):
+        self.place_step = 0
         super().exit()
 
 class ReachToPlace(MoveWithNavObs):
@@ -381,6 +399,9 @@ class ReachToPlace(MoveWithNavObs):
             stacked_percentage *= 100
             print("Stacked: {} bins, {:.2f}% of the total volume".format(len(stacked_bin_observations), 
                                                     stacked_percentage))
+            self.context.world.total_stacked_percentage += stacked_percentage
+            self.context.world.num_episodes += 1
+            print("Average stacked percentage: {:.2f}%".format(self.context.world.total_stacked_percentage / self.context.world.num_episodes))
             print("===============================================")
             self.place_step = 0
             self.context.world.reset(soft=False)
@@ -562,10 +583,13 @@ class Dispatch(DfDecider):
     def decide(self):
         if self.context.stack_complete:
             print("Finished episode successfully!!!")
-            print("===============Evaluation Result===============")         
+            print("===============Evaluation Result===============")
+            _, stacked_percentage = self.context.stacked_bin_observation()         
             print("Stacked: {} bins, {:.2f}% of the total volume".format(len(self.context.stacked_bins), 
                                                     self.context.stacked_volume / (1.0 * 1.0 * 0.15 * self.context.max_levels) * 100))
-
+            self.context.world.total_stacked_percentage += stacked_percentage
+            self.context.world.num_episodes += 1
+            print("Average stacked percentage: {:.2f}%".format(self.context.world.total_stacked_percentage / self.context.world.num_episodes))            
             self.place_step = 0
             self.context.world.reset(soft=False)            
             print("===============================================")

@@ -89,6 +89,8 @@ class CortexWorld(World):
         self.stacked_volume = 0.0
         self.stacked_percentage = 0.0
         self.show_progress = True # False
+        self.total_stacked_percentage = 0.0
+        self.num_episodes = 0
 
     def add_logical_state_monitor(self, ls_monitor: LogicalStateMonitor) -> None:
         self._logical_state_monitors[ls_monitor.name] = ls_monitor
@@ -129,7 +131,6 @@ class CortexWorld(World):
                 
                 if self.stacked_volume < stacked_volume:
                     self.stacked_volume = stacked_volume
-                    #self.stacked_percentage = self.stacked_volume / (1.0 * 1.0 * 0.15 * 3) * 100
                     self.stacked_percentage = self.stacked_volume * 100
                     if self.show_progress:
                         print("Stacked: {} bins, {:.2f}% of the total volume".format(len(stacked_bin_observations), 
@@ -173,7 +174,9 @@ class CortexWorld(World):
                     print("===============Evaluation Result===============")
                     print("Stacked: {} bins, {:.2f}% of the total volume".format(len(stacked_bin_observations), 
                                                             self.stacked_percentage))
-                    
+                    self.total_stacked_percentage += self.stacked_percentage
+                    self.num_episodes += 1
+                    print("Average stacked percentage: {:.2f}%".format(self.total_stacked_percentage / self.num_episodes))
                     print("===============================================")
                     self.reset(soft=False)
 
