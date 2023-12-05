@@ -12,7 +12,7 @@ import torch.nn as nn
 import matplotlib.pyplot as plt
 from scipy.spatial.transform import Rotation
 
-BOX_HEIGHT = 0.156
+BOX_HEIGHT = 0.150
 
 #criterion = nn.SmoothL1Loss(reduction='mean').cuda()
 criterion = nn.MSELoss(reduction='mean').cuda()
@@ -465,10 +465,10 @@ def project_axis(axis, min_y, max_y, min_x, max_x, level_map, box_level0):
     if proj_ > 0: proj_ -= 1
     return proj_
 
-def get_box_level(pose_list):
+def get_box_level(pose_list, scale=0.8):
     level_list, eps = [], 0.02
     for pose in pose_list:
-        current_level = int((pose[2]+eps)/BOX_HEIGHT)
+        current_level = int((pose[2]+eps)/(BOX_HEIGHT*scale+0.007))
         #assert 0 <=current_level < self.max_level
         level_list.append(current_level)
     return level_list

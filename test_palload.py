@@ -219,7 +219,7 @@ if __name__ == "__main__":
     parser.add_argument("--pallet_scale", default=0.8, type=float)
     ## Agent ##
     parser.add_argument("--algorithm", default='DQN', type=str, help='[DQN, D-PPO, D-TAC]')
-    parser.add_argument("--model_path", default="", type=str)
+    parser.add_argument("--model_path", default="0000_best", type=str)
     parser.add_argument("--num_trials", default=25, type=int)
     ## Stack Condtions ##
     parser.add_argument("--use_bound_mask", action="store_false")

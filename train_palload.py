@@ -348,11 +348,6 @@ if __name__=='__main__':
     parser.add_argument("--wandb_off", action="store_true")
     args = parser.parse_args()
 
-    # DQN with demo: R 78.47 / B 24.33 / P 0.419 / F 0.821
-    # DQN:   R 70.95 / B 22.96 / P 0.390 / F 0.804
-    # D-TAC: R 81.69 / B 24.68 / P 0.438
-    # D-PPO: R 64.63 / B 21.36 / P 0.373
-
     # env configuration #
     render = args.render
     discrete_block = args.discrete

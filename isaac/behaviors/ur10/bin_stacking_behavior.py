@@ -376,9 +376,9 @@ class ReachToPlace(MoveWithNavObs):
         if self.place_step > 400:
             print("Planning takes too long!!! Resetting the environment")
             print("===============Evaluation Result===============")
-            stacked_bin_observations, stacked_volume = \
+            stacked_bin_observations, stacked_percentage = \
                 self.context.stacked_bin_observation()
-            stacked_percentage = stacked_volume / (1.0 * 1.0 * 0.15 * self.context.max_levels) * 100
+            stacked_percentage *= 100
             print("Stacked: {} bins, {:.2f}% of the total volume".format(len(stacked_bin_observations), 
                                                     stacked_percentage))
             print("===============================================")
