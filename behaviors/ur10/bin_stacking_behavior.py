@@ -116,7 +116,7 @@ class BinStackingContext(ObstacleMonitorContext):
         pallet = self.world.scene.get_object("pallet")
         self.pallet_pos, _ = pallet.get_world_pose()
         self.pallet_size = bbox_info(pallet.prim_path)
-        
+
         # self.planner = RuleBasedPlanner(self.pallet_pos, self.pallet_size)# NaivePlanner()
         self.planner = ModelBasedPlanner(self.pallet_pos, self.pallet_size,
                                          agent=agent, args=args)
@@ -341,6 +341,10 @@ class ReachToPlace(MoveWithNavObs):
         self.target_p, action_rot = self.context.planner.get_action(bin_bbox)
         self.bin_under = get_bin_under(self.target_p, self.context.stacked_bins)
 
+        # render
+        self.context.renderer.render_current_state(self.context.planner.state,)
+
+
         # TODO: calculate rotation matrix -> change to quaternion..?
         if action_rot == 0:
             target_ax = np.array([0.0, 0.0, -1.0])
@@ -562,7 +566,6 @@ class Dispatch(DfDecider):
             print("===============Evaluation Result===============")         
             print("Stacked: {} bins, {:.2f}% of the total volume".format(len(self.context.stacked_bins), 
                                                     self.context.stacked_volume / (1.0 * 1.0 * 0.15 * 3) * 100))
-            
             print("===============================================")
             return DfDecision("go_home")
 

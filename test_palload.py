@@ -83,7 +83,6 @@ class BinStackingTask(BaseTask):
 
         self.env_path = "/World/Ur10Table"
         self.bins = []
-        self.stashed_bins = []
         self.on_conveyor = None
 
     def _spawn_bin(self, rigid_bin):
@@ -108,7 +107,7 @@ class BinStackingTask(BaseTask):
             spawn_new = True
         else:
             (x, y, z), _ = self.on_conveyor.get_world_pose()
-            is_on_conveyor = y > 0.5 and -0.5 < x and x < 0.5
+            is_on_conveyor = y > 0.4 and -0.5 < x and x < 0.5
             if not is_on_conveyor:
                 spawn_new = True
 
@@ -119,9 +118,9 @@ class BinStackingTask(BaseTask):
             # add_reference_to_stage(usd_path=self.assets.small_klt_usd, prim_path=prim_path)
 
             # scale bin from randomly chosen bin size
-            bin_size = np.random.choice([0.2, 0.3, 0.4, 0.5], 2, True, p=[0.4, 0.3, 0.2, 0.1])
-            bin_size *= 0.9
-            bin_size = np.append(bin_size, 0.15)
+            bin_size = np.random.choice([0.2, 0.3, 0.4, 0.5], 2, True, p=[0.4, 0.3, 0.2, 0.1]) * 0.8
+            bin_size -= 0.02
+            bin_size = np.append(bin_size, 0.15 * 0.8)
             
             scale = get_scale(prim_path, bin_size)
             

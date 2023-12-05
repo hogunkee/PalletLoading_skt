@@ -9,12 +9,112 @@ from copy import deepcopy
 
 import torch
 import torch.nn as nn
+import matplotlib.pyplot as plt
 from scipy.spatial.transform import Rotation
 
 BOX_HEIGHT = 0.156
 
 #criterion = nn.SmoothL1Loss(reduction='mean').cuda()
 criterion = nn.MSELoss(reduction='mean').cuda()
+
+class Renderer(object):
+    def __init__(self, resolution, show_q=False):
+        if show_q:
+            raise NotImplementedError
+        
+        plot0 = plt.subplot2grid((1,3), (0,0))
+        plot1 = plt.subplot2grid((1,3), (0,1))
+        plot2 = plt.subplot2grid((1,3), (0,2))
+        plot0.set_title('Previous state')
+        plot1.set_title('Current state')
+        plot2.set_title('Current block')
+        self.plots = [plot0, plot1, plot2]
+
+        for i, p in enumerate(self.plots):
+            p.set_xticks([])
+            p.set_yticks([])
+            if i==0 or i==1: p.axis('off')
+        plt.show(block=False)
+
+        self.resolution = resolution
+        self.show_q = show_q
+
+    def render_current_state(self, state, next_blocks, previous_state, q_value=None, box=None):
+        next_blocks = [next_blocks]
+        if len(np.shape(state)) == 3:
+            state = state[0]
+            previous_state = previous_state[0]
+
+        b_gray = 0.85
+        
+        pad = int(0.1 * self.resolution)
+        state_pad = np.ones([int(1.2*self.resolution), int(1.2*self.resolution), 3]) * b_gray
+        pad_mask = np.ones(state_pad.shape[:2])
+        pad_mask[pad:-pad, pad:-pad] = 0
+
+        pre_state_pad = state_pad.copy()
+        # y, x = np.where(previous_state==0)
+        # pre_state_pad[y + pad, x + pad] = (1, 1, 1)
+        # y, x = np.where(previous_state==1)
+        # pre_state_pad[y + pad, x + pad] = (0, 0, 0)
+        for y in range(np.shape(previous_state)[0]):
+            for x in range(np.shape(previous_state)[1]):
+                gray_ = 1.0 - previous_state[y,x]
+                pre_state_pad[y + pad, x + pad] = (gray_, gray_, gray_)
+        y, x = np.where(previous_state>1)
+        pre_state_pad[y + pad, x + pad] = (1, 0, 0)
+        y, x = np.where(np.all(pre_state_pad!=[b_gray,b_gray,b_gray], axis=-1) & (pad_mask==1))
+        pre_state_pad[y, x] = (1, 0, 0)
+        pre_state_pad = np.flip(pre_state_pad, axis=0)
+
+        self.plots[0].imshow(pre_state_pad)
+
+        if self.show_q:
+            raise NotImplementedError
+
+        state_pad = np.ones([int(1.2*self.resolution), int(1.2*self.resolution), 3]) * b_gray
+        # y, x = np.where(state==0)
+        # state_pad[y + pad, x + pad] = (1, 1, 1)
+        # y, x = np.where(state==1)
+        # state_pad[y + pad, x + pad] = (0, 0, 0)
+        for y in range(np.shape(state)[0]):
+            for x in range(np.shape(state)[1]):
+                gray_ = 1.0 - state[y,x]
+                state_pad[y + pad, x + pad] = (gray_, gray_, gray_)
+        if box is not None:
+            min_y, max_y, min_x, max_x = np.array(box) + pad
+            state_pad[min_y: max_y, min_x: max_x] = (0, 0, 1)
+
+        y, x = np.where(state>1)
+        state_pad[y + pad, x + pad] = (1, 0, 0)
+        y, x = np.where(np.all(state_pad!=[b_gray,b_gray,b_gray], axis=-1) & (pad_mask==1))
+        state_pad[y, x] = (1, 0, 0)
+        state_pad = np.flip(state_pad, axis=0)
+        self.plots[1].imshow(state_pad)
+
+        block_figures = None
+            
+        for i, b in enumerate(next_blocks):
+            cy, cx = int(0.6*self.resolution), int(0.6*self.resolution)
+            b = np.round(np.array(b) * self.resolution).astype(int)
+            if len(b) > 2: b = b[:2]
+            by, bx = b
+            min_y, max_y = math.floor(cy-by/2), math.floor(cy+by/2)
+            min_x, max_x = math.floor(cx-bx/2), math.floor(cx+bx/2)
+
+            block_fig = np.ones_like(state_pad)
+            block_fig[max(min_y,0): max_y, max(min_x,0): max_x] = [0, 0, 0]
+
+            if i==0:
+                self.plots[2].imshow(block_fig)
+            else:
+                if block_figures is None:
+                    block_figures = block_fig
+                else:
+                    block_figures = np.concatenate([block_figures, block_fig], axis=1)
+        plt.draw()
+        # plt.pause(0.01)
+        plt.pause(1)    
 
 def box_info(prim_path):
     bbox_cache = create_bbox_cache()
@@ -42,7 +142,6 @@ def box_info(prim_path):
 #         "height": height,
 #         "depth": depth
 #     }
-    
 def bbox_info(prim_path):
     # Calculate the bounds of the prim
     bb_cache = create_bbox_cache()

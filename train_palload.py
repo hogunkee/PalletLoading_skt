@@ -313,10 +313,10 @@ if __name__=='__main__':
     parser.add_argument("--reward", default='dense', type=str)
     parser.add_argument("--max_levels", default=5, type=int)
     ## Learning ##
-    parser.add_argument("--algorithm", default='DQN', type=str, help='[DQN, D-PPO, D-TAC]')
+    parser.add_argument("--algorithm", default='D-PPO', type=str, help='[DQN, D-PPO, D-TAC]')
     parser.add_argument("--learning_rate", default=3e-4, type=float)
     parser.add_argument("--batch_size", default=128, type=int)
-    parser.add_argument("--buff_size", default=1e5, type=float)
+    parser.add_argument("--buff_size", default=512, type=float)
     parser.add_argument("--tau", default=1e-3, type=float)
     parser.add_argument("--grad_clip", default=1e0, type=float)
     parser.add_argument("--soft_tmp", default=1e-1, type=float)
@@ -367,6 +367,8 @@ if __name__=='__main__':
     use_projection = True # args.use_projection
     use_coordnconv = True # args.use_coordnconv
     use_full_demos = True # args.use_full_demos
+
+    args.model_path = "1204_1745_best"
 
     gpu = args.gpu
     if "CUDA_VISIBLE_DEVICES" in os.environ:
