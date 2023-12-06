@@ -124,12 +124,13 @@ class Renderer():
 
             if i==0:
                 self.plots[2].imshow(block_fig)
-            else:
-                if block_figures is None:
-                    block_figures = block_fig
-                else:
-                    block_figures = np.concatenate([block_figures, block_fig], axis=1)
-        self.plots[-1].imshow(block_figures)
+                break
+            # else:
+            #     if block_figures is None:
+            #         block_figures = block_fig
+            #     else:
+            #         block_figures = np.concatenate([block_figures, block_fig], axis=1)
+        # self.plots[-1].imshow(block_figures)
         plt.draw()
         # plt.pause(0.01)
         plt.pause(1)

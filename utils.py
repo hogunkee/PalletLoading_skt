@@ -94,6 +94,50 @@ def generate_floor_mask(state, block, pre_mask=None, min_packed_ratio=0.70):
     else:
         return mask
 
+def generate_solid_mask(state, block, pre_mask, min_packed_ratio=0.70):
+    resolution = np.shape(state)[1]
+    if pre_mask is None:
+        mask = np.ones((2,resolution,resolution))
+    else:
+        mask = np.copy(pre_mask)
+
+    by, bx = block
+    by, bx = math.ceil(by*resolution), math.ceil(bx*resolution)
+
+    cum_state = generate_cumulative_state(state)
+    level_map = np.sum(cum_state, axis=0)
+
+    for y_ in range(resolution):
+        for x_ in range(resolution):
+            if mask[0,y_,x_] == 0: continue
+
+            min_y, max_y = math.floor(y_-by/2), math.floor(y_+by/2)
+            min_x, max_x = math.floor(x_-bx/2), math.floor(x_+bx/2)
+
+            box_level = np.max(level_map[max(min_y,0):max_y,max(min_x,0):max_x]) + 1
+            if box_level == 1: continue
+
+            packed_ratio = np.mean(state[int(box_level)-2,max(min_y,0):max_y,max(min_x,0):max_x])
+            if packed_ratio < min_packed_ratio:
+                mask[0,y_,x_] = 0
+
+    for y_ in range(resolution):
+        for x_ in range(resolution):
+            if mask[1,x_,y_] == 0: continue
+            min_y, max_y = math.floor(y_-by/2), math.floor(y_+by/2)
+            min_x, max_x = math.floor(x_-bx/2), math.floor(x_+bx/2)
+
+            box_level = np.max(level_map[max(min_x,0):max_x,max(min_y,0):max_y]) + 1
+            if box_level == 1: continue
+
+            packed_ratio = np.mean(state[int(box_level)-2,max(min_x,0):max_x,max(min_y,0):max_y])
+            if packed_ratio < min_packed_ratio:
+                mask[1,x_,y_] = 0
+
+    if np.sum(mask) == 0:
+        mask = np.copy(pre_mask)
+
+    return mask
 
 def generate_bound_mask(state, block):
     resolution = np.shape(state)[1]
