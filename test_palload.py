@@ -34,6 +34,8 @@ import isaac.behaviors.ur10.bin_stacking_behavior as behavior
 import os
 from isaac.isaac_utils import bbox_info
 
+import joblib
+
 # relative path cause error (can't load multiple objects from single usd file)
 ASSET_DIR = os.getcwd() + "/isaac/assets"
 
@@ -77,7 +79,9 @@ def random_bin_spawn_transform():
 
 
 class BinStackingTask(BaseTask):
-    def __init__(self, env_path, assets, pallet_scale):
+    def __init__(self, env_path, assets, pallet_scale,
+                 use_fixed_scenario=False, episode_file="./episodes.dat.gz",
+                 episode_num=0):
         super().__init__("bin_stacking")
         self.assets = assets
         self.pallet_scale = pallet_scale
@@ -85,7 +89,13 @@ class BinStackingTask(BaseTask):
         self.env_path = "/World/Ur10Table"
         self.bins = []
         self.on_conveyor = None
+        self.use_fixed_scenario = use_fixed_scenario
 
+        if self.use_fixed_scenario:
+            episode_file = os.path.join(os.path.dirname(__file__), episode_file)
+            self.episodes = joblib.load(episode_file)
+            self.episode_num = episode_num
+            
     def _spawn_bin(self, rigid_bin):
         x, q = random_bin_spawn_transform()
         rigid_bin.set_world_pose(position=x, orientation=q)
@@ -118,8 +128,13 @@ class BinStackingTask(BaseTask):
             add_reference_to_stage(usd_path=self.assets.box_usd, prim_path=prim_path)
             # add_reference_to_stage(usd_path=self.assets.small_klt_usd, prim_path=prim_path)
 
-            # scale bin from randomly chosen bin size
-            bin_size = np.random.choice([0.2, 0.3, 0.4, 0.5], 2, True, p=[0.4, 0.3, 0.2, 0.1]) * self.pallet_scale
+            if self.use_fixed_scenario:
+                # scale bin from fixed bin size
+                bin_size = self.episodes[self.episode_num][len(self.bins)]
+                bin_size = np.array(bin_size) * self.pallet_scale
+            else:
+                # scale bin from randomly chosen bin size
+                bin_size = np.random.choice([0.2, 0.3, 0.4, 0.5], 2, True, p=[0.4, 0.3, 0.2, 0.1]) * self.pallet_scale
             bin_size -= 0.02
             bin_size = np.append(bin_size, 0.15 * self.pallet_scale)
             
@@ -202,7 +217,11 @@ def main(agent, args):
         orientation=rot_utils.euler_angles_to_quats(np.array([0, 105, 0]), degrees=True),
     )
 
-    world.add_task(BinStackingTask(env_path, ur10_assets, args.pallet_scale))
+    world.add_task(BinStackingTask(env_path, ur10_assets, args.pallet_scale, 
+                                   use_fixed_scenario=args.use_fixed_scenario,
+                                   episode_file=args.episode_file,
+                                   episode_num=args.episode_num))
+    
     world.add_decider_network(behavior.make_decider_network(robot, agent, args))
     world.add_camera(camera)
 
@@ -217,15 +236,18 @@ if __name__ == "__main__":
     parser.add_argument("--resolution", default=10, type=int)
     parser.add_argument("--max_levels", default=5, type=int)
     parser.add_argument("--pallet_scale", default=0.8, type=float)
+    parser.add_argument("--use_fixed_scenario", default=False, action="store_true")
+    parser.add_argument("--episode_file", default="./episodes.dat.gz", type=str)
+    parser.add_argument("--episode_num", default=0, type=int)
     ## Agent ##
     parser.add_argument("--algorithm", default='DQN', type=str, help='[DQN, D-PPO, D-TAC]')
     parser.add_argument("--model_path", default="0000_best", type=str)
     parser.add_argument("--num_trials", default=25, type=int)
     ## Stack Condtions ##
-    parser.add_argument("--use_bound_mask", action="store_false")
-    parser.add_argument("--use_floor_mask", action="store_false")
-    parser.add_argument("--use_projection", action="store_false")
-    parser.add_argument("--use_coordnconv", action="store_false")
+    parser.add_argument("--use_bound_mask", default=True, action="store_false")
+    parser.add_argument("--use_floor_mask", default=True, action="store_false")
+    parser.add_argument("--use_projection", default=True, action="store_false")
+    parser.add_argument("--use_coordnconv", default=True, action="store_false")
     args = parser.parse_args()
 
     if args.algorithm == "DQN":
