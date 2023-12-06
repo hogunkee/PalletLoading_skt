@@ -11,11 +11,12 @@ from utils import *
 class DiscretePPO_Agent:
     def __init__(self, train, model_path='', use_coordnconv=False, config=None, device='cuda:0'):
 
-        self.gamma = config.gamma
-        self.lam = config.lam
-        self.epsilon = config.epsilon
-        self.lr = config.learning_rate
-        self.num_updates = config.num_updates
+        if train:
+            self.gamma = config.gamma
+            self.lam = config.lam
+            self.epsilon = config.epsilon
+            self.lr = config.learning_rate
+            self.num_updates = config.num_updates
 
         self.pi = DiscreteActor(2, config.max_levels, config.resolution**2,
                                 use_coordnconv=use_coordnconv).cuda()

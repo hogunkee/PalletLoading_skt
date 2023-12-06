@@ -249,14 +249,7 @@ if __name__ == "__main__":
     parser.add_argument("--use_floor_mask", default=True, action="store_false")
     parser.add_argument("--use_projection", default=True, action="store_false")
     parser.add_argument("--use_coordnconv", default=True, action="store_false")
-    ## For Discrete-PPO ##
-    parser.add_argument("--gamma", default=0.99, type=float)
-    parser.add_argument("--lam", default=0.95, type=float)
-    parser.add_argument("--epsilon", default=0.2, type=float)
-    parser.add_argument("--num_updates", default=1, type=int)
-    ## For Discrete-TAC ##
-    parser.add_argument("--q_prime", default=1.20, type=float)
-    parser.add_argument("--target_entropy_ratio", default=0.98, type=float)
+    
     args = parser.parse_args()
 
     if args.algorithm == "DQN":
