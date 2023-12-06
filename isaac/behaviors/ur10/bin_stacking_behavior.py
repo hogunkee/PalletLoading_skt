@@ -152,7 +152,7 @@ class BinStackingContext(ObstacleMonitorContext):
     def stack_complete(self):
         # return len(self.stacked_bins) == len(self.stack_coordinates)
         # TODO: how should we define stack_complete?
-        return self.stacked_volume / (1.0 * 1.0 * 0.15 * self.max_levels) > 0.9
+        return self.stacked_volume > 0.9
 
     @property
     def stacked_volume(self):
@@ -586,7 +586,7 @@ class Dispatch(DfDecider):
             print("===============Evaluation Result===============")
             _, stacked_percentage = self.context.stacked_bin_observation()         
             print("Stacked: {} bins, {:.2f}% of the total volume".format(len(self.context.stacked_bins), 
-                                                    self.context.stacked_volume / (1.0 * 1.0 * 0.15 * self.context.max_levels) * 100))
+                                                    self.context.stacked_volume * 100))
             self.context.world.total_stacked_percentage += stacked_percentage
             self.context.world.num_episodes += 1
             print("Average stacked percentage: {:.2f}%".format(self.context.world.total_stacked_percentage / self.context.world.num_episodes))            
