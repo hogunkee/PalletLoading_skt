@@ -91,6 +91,7 @@ class CortexWorld(World):
         self.show_progress = True # False
         self.total_stacked_percentage = 0.0
         self.num_episodes = 0
+        self.max_episode = -1
 
     def add_logical_state_monitor(self, ls_monitor: LogicalStateMonitor) -> None:
         self._logical_state_monitors[ls_monitor.name] = ls_monitor
@@ -111,7 +112,12 @@ class CortexWorld(World):
         self.camera = camera
         self.camera.initialize()
 
+    def set_maxepisode(self, max_episode: int) -> None:
+        self.max_episode = max_episode
+
     def step(self, render: bool = True, step_sim: bool = True) -> None:
+        finish_ = False
+
         if self._task_scene_built:
             for task in self._current_tasks.values():
                 task.pre_step(self.current_time_step_index, self.current_time)
@@ -180,6 +186,9 @@ class CortexWorld(World):
                     print("===============================================")
                     self.reset(soft=False)
 
+                    if self.num_episodes == self.max_episode:
+                        finish_ = True
+
         if self.scene._enable_bounding_box_computations:
             self.scene._bbox_cache.SetTime(Usd.TimeCode(self._current_time))
 
@@ -192,7 +201,7 @@ class CortexWorld(World):
             self._data_logger.add_data(
                 data=data, current_time_step=self.current_time_step_index, current_time=self.current_time
             )
-        return
+        return finish_
 
     def reset(self, soft: bool = False) -> None:
         super().reset(soft)
@@ -248,6 +257,8 @@ class CortexWorld(World):
                 # Every time the self steps playing we'll need to reset again when it starts again.
                 needs_reset = True
 
-            self.step(render=render)
+            finish_ = self.step(render=render)
             if not loop_fast:
                 rate.sleep()
+
+            if finish_: break

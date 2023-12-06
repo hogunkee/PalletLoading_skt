@@ -24,6 +24,7 @@ def evaluate(
         use_floor_mask=False,
         use_projection=False,
         use_coordnconv=False,
+        use_solid_mask=False,
         print_result=False,
     ):
     if agent is None:
@@ -51,6 +52,8 @@ def evaluate(
             q_mask = np.ones((2,resolution,resolution))
             if use_bound_mask:
                 q_mask = generate_bound_mask(state, block)
+            if use_solid_mask:
+                q_mask = generate_solid_mask(state, block, q_mask)
             if use_floor_mask:
                 q_mask = generate_floor_mask(state, block, q_mask)
 
@@ -99,6 +102,7 @@ def learning(
         use_projection=False,
         use_coordnconv=False,
         use_full_demos=False,
+        use_solid_mask=False,
     ):
     agent = Agent(True, model_path, use_coordnconv, config)
 
@@ -163,6 +167,8 @@ def learning(
         q_mask = np.ones((2,resolution,resolution))
         if use_bound_mask:
             q_mask = generate_bound_mask(state, block)
+        if use_solid_mask:
+            q_mask = generate_solid_mask(state, block, q_mask)
         if use_floor_mask:
             q_mask = generate_floor_mask(state, block, q_mask)
 
@@ -191,6 +197,8 @@ def learning(
             next_q_mask = np.ones((2,resolution,resolution))
             if use_bound_mask:
                 next_q_mask = generate_bound_mask(next_state, next_block)
+            if use_solid_mask:
+                next_q_mask = generate_solid_mask(next_state, next_block, next_q_mask)
             if use_floor_mask:
                 next_q_mask = generate_floor_mask(next_state, next_block, next_q_mask)
 
@@ -257,7 +265,8 @@ def learning(
             agent.train_on_off(train=False)
             test_len, test_pf = evaluate(env=env, agent=agent, config=config,
                                          use_bound_mask=use_bound_mask, use_floor_mask=use_floor_mask,
-                                         use_projection=use_projection, use_coordnconv=use_coordnconv)
+                                         use_projection=use_projection, use_coordnconv=use_coordnconv,
+                                         use_solid_mask=use_solid_mask)
             
             log_test_len.append(test_len)
             log_test_pf.append(test_pf)
@@ -364,9 +373,10 @@ if __name__=='__main__':
     # heuristics #
     use_bound_mask = True # args.use_bound_mask
     use_floor_mask = True # args.use_floor_mask
-    use_projection = True # args.use_projection
+    use_projection = False # args.use_projection
     use_coordnconv = True # args.use_coordnconv
-    use_full_demos = True # args.use_full_demos
+    use_full_demos = False # args.use_full_demos
+    use_solid_mask = True # args.use_solid_mask
 
     gpu = args.gpu
     if "CUDA_VISIBLE_DEVICES" in os.environ:
@@ -438,10 +448,11 @@ if __name__=='__main__':
     if evaluation:
         evaluate(env=env, model_path=model_path, config=args, print_result=True,
                  use_bound_mask=use_bound_mask, use_floor_mask=use_floor_mask,
-                 use_projection=use_projection, use_coordnconv=use_coordnconv)
+                 use_projection=use_projection, use_coordnconv=use_coordnconv,
+                 use_solid_mask=use_solid_mask)
     else:
         learning(env=env, save_name=save_name, model_path=model_path,
                  learning_type=learning_type, config=args,
                  use_bound_mask=use_bound_mask, use_floor_mask=use_floor_mask,
                  use_projection=use_projection, use_coordnconv=use_coordnconv,
-                 use_full_demos=use_full_demos)
+                 use_full_demos=use_full_demos, use_solid_mask=use_solid_mask)

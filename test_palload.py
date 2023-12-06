@@ -224,6 +224,7 @@ def main(agent, args):
     
     world.add_decider_network(behavior.make_decider_network(robot, agent, args))
     world.add_camera(camera)
+    world.set_maxepisode(args.num_trials)
 
     world.run(simulation_app, render=True, loop_fast=True, play_on_entry=True)
     simulation_app.close()
@@ -242,7 +243,7 @@ if __name__ == "__main__":
     ## Agent ##
     parser.add_argument("--algorithm", default='DQN', type=str, help='[DQN, D-PPO, D-TAC]')
     parser.add_argument("--model_path", default="0000_best", type=str)
-    parser.add_argument("--num_trials", default=25, type=int)
+    parser.add_argument("--num_trials", default=3, type=int)
     ## Stack Condtions ##
     parser.add_argument("--use_bound_mask", default=True, action="store_false")
     parser.add_argument("--use_floor_mask", default=True, action="store_false")

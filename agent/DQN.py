@@ -48,7 +48,9 @@ class DQN_Agent():
         use_projection = True if p_project > 0.0 else False
 
         if deterministic:
-            if use_mask: q_value *= qmask
+            if use_mask:
+                #q_value *= qmask
+                q_value = np.where(qmask>0, q_value, -1.0)
 
             n_th, n_y, n_x = q_value.shape
             aidx = np.argmax(q_value)
@@ -84,7 +86,7 @@ class DQN_Agent():
         else:
             return action, None
         
-    def calculate_loss(self, minibatch, FCQ, FCQ_target, gamma=0.99, max_error=5.0):
+    def calculate_loss(self, minibatch, FCQ, FCQ_target, gamma=0.99, max_error=0.0):
         state, block, qmask, next_state, next_block, next_qmask, actions, rewards, not_done = minibatch
         state = state.type(torch.float32)
         qmask = qmask.type(torch.float32)
